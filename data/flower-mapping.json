@@ -1,0 +1,48 @@
+{
+  "flowers": [
+    {
+      "id": "lotus",
+      "name": "Lotus",
+      "description": "You are calm, reflective, and value inner peace. Like the lotus rising from muddy waters, you find beauty and clarity even in challenging situations. You thrive in solitude and seek balance in life.",
+      "option_weights": {
+        "q1": { "a": 3, "b": 0, "c": 1, "d": 2 },
+        "q2": { "a": 2, "b": 0, "c": 1, "d": 3 },
+        "q3": { "a": 3, "b": 0, "c": 1, "d": 2 },
+        "q4": { "a": 3, "b": 0, "c": 1, "d": 2 }
+      }
+    },
+    {
+      "id": "rose",
+      "name": "Rose",
+      "description": "You are passionate, expressive, and bold. Like the rose, you're not afraid to stand out and make a statement. You bring energy and enthusiasm to everything you do, and people are drawn to your confident presence.",
+      "option_weights": {
+        "q1": { "a": 0, "b": 2, "c": 3, "d": 1 },
+        "q2": { "a": 1, "b": 3, "c": 1, "d": 0 },
+        "q3": { "a": 0, "b": 3, "c": 1, "d": 1 },
+        "q4": { "a": 0, "b": 3, "c": 1, "d": 1 }
+      }
+    },
+    {
+      "id": "sunflower",
+      "name": "Sunflower",
+      "description": "You are warm, nurturing, and devoted to those you care about. Like the sunflower turning toward the light, you radiate positivity and support others. Loyalty and connection are at the heart of who you are.",
+      "option_weights": {
+        "q1": { "a": 0, "b": 3, "c": 1, "d": 2 },
+        "q2": { "a": 2, "b": 1, "c": 3, "d": 2 },
+        "q3": { "a": 1, "b": 0, "c": 3, "d": 1 },
+        "q4": { "a": 1, "b": 0, "c": 3, "d": 1 }
+      }
+    },
+    {
+      "id": "lavender",
+      "name": "Lavender",
+      "description": "You are thoughtful, introspective, and drawn to growth. Like lavender, you bring a sense of calm wisdom and gentle strength. You value depth over surface-level connections and are always seeking to understand more.",
+      "option_weights": {
+        "q1": { "a": 2, "b": 1, "c": 0, "d": 3 },
+        "q2": { "a": 3, "b": 0, "c": 1, "d": 2 },
+        "q3": { "a": 1, "b": 0, "c": 1, "d": 3 },
+        "q4": { "a": 2, "b": 0, "c": 0, "d": 3 }
+      }
+    }
+  ]
+}

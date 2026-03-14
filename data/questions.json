@@ -1,0 +1,44 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "text": "How do you typically deal with stress?",
+      "options": [
+        { "value": "a", "label": "I seek solitude and quiet" },
+        { "value": "b", "label": "I talk to friends or family" },
+        { "value": "c", "label": "I stay busy and productive" },
+        { "value": "d", "label": "I go outside or spend time in nature" }
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "What energizes you most in social situations?",
+      "options": [
+        { "value": "a", "label": "Deep one-on-one conversations" },
+        { "value": "b", "label": "Being the center of attention" },
+        { "value": "c", "label": "Helping and supporting others" },
+        { "value": "d", "label": "Small, intimate groups" }
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "How would friends describe your personality?",
+      "options": [
+        { "value": "a", "label": "Calm and steady" },
+        { "value": "b", "label": "Bold and expressive" },
+        { "value": "c", "label": "Warm and nurturing" },
+        { "value": "d", "label": "Thoughtful and introspective" }
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "What matters most to you in life?",
+      "options": [
+        { "value": "a", "label": "Inner peace and balance" },
+        { "value": "b", "label": "Passion and excitement" },
+        { "value": "c", "label": "Connection and loyalty" },
+        { "value": "d", "label": "Growth and wisdom" }
+      ]
+    }
+  ]
+}

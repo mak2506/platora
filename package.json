@@ -1,0 +1,20 @@
+{
+  "name": "plantora-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Plantora - personality-to-flower quiz",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:http": "node scripts/start-http.js",
+    "generate-certs": "node scripts/generate-certs.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.0",
+    "selfsigned": "^2.4.1"
+  }
+}
