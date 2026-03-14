@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plantora Quiz</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #faf9f7;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card h2 { margin: 0 0 20px; font-size: 1.25rem; color: #2d5a27; }
+    .question {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #eee;
+    }
+    .question:last-of-type { border-bottom: none; }
+    .question-label { font-weight: 600; margin-bottom: 8px; display: block; }
+    .option {
+      display: block;
+      margin: 6px 0;
+      padding: 10px 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .option:hover { background: #eee; }
+    .option.selected { border-color: #2d5a27; background: #e8f5e6; }
+    .option input { margin-right: 8px; }
+    .btn {
+      margin-top: 16px;
+      padding: 12px 24px;
+      background: #2d5a27;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { background: #3d7a37; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status { margin-top: 12px; color: #666; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Personality Quiz</h2>
+    <div id="questions"></div>
+    <button id="submitBtn" class="btn">Submit answers</button>
+    <p id="status" class="status"></p>
+  </div>
+  <script>
+    (function() {
+      const questionsEl = document.getElementById('questions');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusEl = document.getElementById('status');
+      let questions = [];
+      let answers = {};
+
+      function render(data) {
+        if (!data?.questions?.length) return;
+        questions = data.questions;
+        answers = {};
+        questionsEl.innerHTML = questions.map(q => `
+          <div class="question" data-id="${q.id}">
+            <label class="question-label">${q.text}</label>
+            ${(q.options || []).map(o => `
+              <label class="option">
+                <input type="radio" name="${q.id}" value="${o.value}">
+                ${o.label}
+              </label>
+            `).join('')}
+          </div>
+        `).join('');
+        questionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', () => {
+            answers[radio.name] = radio.value;
+            questionsEl.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            questionsEl.querySelectorAll('input:checked').forEach(r => {
+              r.closest('.option').classList.add('selected');
+            });
+          });
+        });
+      }
+
+      function callTool(name, args) {
+        const id = crypto.randomUUID();
+        window.parent.postMessage({
+          jsonrpc: '2.0',
+          id,
+          method: 'tools/call',
+          params: { name, arguments: args || {} }
+        }, '*');
+      }
+
+      submitBtn.onclick = () => {
+        const missing = questions.filter(q => !answers[q.id]).map(q => q.id);
+        if (missing.length) {
+          statusEl.textContent = 'Please answer all questions.';
+          return;
+        }
+        submitBtn.disabled = true;
+        statusEl.textContent = 'Submitting…';
+        callTool('submit_answers', { answers: { ...answers } });
+      };
+
+      window.addEventListener('message', (event) => {
+        if (event.source !== window.parent) return;
+        const msg = event.data;
+        if (!msg || msg.jsonrpc !== '2.0') return;
+        if (msg.method === 'ui/notifications/tool-result') {
+          const data = msg.params?.structuredContent;
+          if (data?.questions) render(data);
+          if (data?.success !== undefined) {
+            statusEl.textContent = data.message || 'Answers recorded. Loading results…';
+          }
+          submitBtn.disabled = false;
+        }
+      }, { passive: true });
+
+      if (window.openai?.toolOutput) {
+        const d = window.openai.toolOutput?.structuredContent;
+        if (d?.questions) render(d);
+      }
+    })();
+  </script>
+</body>
+</html>

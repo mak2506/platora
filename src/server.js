@@ -1,5 +1,8 @@
 import http from "http";
 import https from "https";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -10,7 +13,13 @@ import { SAY_HELLO_RESPONSE } from "./tools/say-hello.js";
 import { getQuestions } from "./tools/start.js";
 import { validateAnswers } from "./tools/submit-answers.js";
 import { formatResults } from "./tools/show-results.js";
+import { getMatchingFlower } from "./scoring.js";
 import { END_RESPONSE } from "./tools/end.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const WELCOME_URI = "ui://plantora/welcome.html";
+const QUIZ_URI = "ui://plantora/quiz.html";
+const RESULTS_URI = "ui://plantora/results.html";
 
 function createMcpServer() {
   const mcpServer = new McpServer({
@@ -18,14 +27,65 @@ function createMcpServer() {
     version: "1.0.0",
   });
 
+  mcpServer.registerResource(
+    "welcome-widget",
+    WELCOME_URI,
+    { mimeType: "text/html", description: "Welcome card for Plantora quiz" },
+    async () => ({
+      contents: [
+        {
+          uri: WELCOME_URI,
+          mimeType: "text/html;profile=mcp-app",
+          text: readFileSync(join(__dirname, "resources", "welcome.html"), "utf-8"),
+        },
+      ],
+    })
+  );
+  mcpServer.registerResource(
+    "quiz-widget",
+    QUIZ_URI,
+    { mimeType: "text/html", description: "Quiz form for Plantora" },
+    async () => ({
+      contents: [
+        {
+          uri: QUIZ_URI,
+          mimeType: "text/html;profile=mcp-app",
+          text: readFileSync(join(__dirname, "resources", "quiz.html"), "utf-8"),
+        },
+      ],
+    })
+  );
+  mcpServer.registerResource(
+    "results-widget",
+    RESULTS_URI,
+    { mimeType: "text/html", description: "Flower result card for Plantora" },
+    async () => ({
+      contents: [
+        {
+          uri: RESULTS_URI,
+          mimeType: "text/html;profile=mcp-app",
+          text: readFileSync(join(__dirname, "resources", "results.html"), "utf-8"),
+        },
+      ],
+    })
+  );
+
   mcpServer.registerTool(
     "say_hello",
     {
       description:
         "Greet the user and explain what Plantora offers: a personality quiz to discover which flower matches their personality. Ask if they want to start.",
+      _meta: {
+        ui: { resourceUri: WELCOME_URI },
+        "openai/outputTemplate": WELCOME_URI,
+      },
     },
     async () => ({
       content: [{ type: "text", text: SAY_HELLO_RESPONSE }],
+      structuredContent: {
+        message: SAY_HELLO_RESPONSE,
+        ctaText: "Start quiz",
+      },
     })
   );
 
@@ -34,6 +94,10 @@ function createMcpServer() {
     {
       description:
         "Start the personality quiz. Returns 4 multiple-choice questions. Call this when the user agrees to begin.",
+      _meta: {
+        ui: { resourceUri: QUIZ_URI },
+        "openai/outputTemplate": QUIZ_URI,
+      },
     },
     async () => {
       const { questions } = getQuestions();
@@ -45,6 +109,7 @@ function createMcpServer() {
             text: `Here are the quiz questions. Ask the user each one and collect their answers (q1, q2, q3, q4), then call submit_answers with the collected answers.\n\n${text}`,
           },
         ],
+        structuredContent: { questions },
       };
     }
   );
@@ -61,11 +126,20 @@ function createMcpServer() {
             "Object mapping question IDs to option values, e.g. { q1: 'a', q2: 'b', q3: 'c', q4: 'd' }"
           ),
       },
+      _meta: {
+        ui: { resourceUri: QUIZ_URI },
+        "openai/outputTemplate": QUIZ_URI,
+      },
     },
     async ({ answers }) => {
       const result = validateAnswers(answers);
       return {
         content: [{ type: "text", text: result.message }],
+        structuredContent: {
+          success: result.valid,
+          message: result.message,
+          answers: result.valid ? answers : undefined,
+        },
       };
     }
   );
@@ -82,10 +156,23 @@ function createMcpServer() {
             "The same answers object passed to submit_answers, e.g. { q1: 'a', q2: 'b', q3: 'c', q4: 'd' }"
           ),
       },
+      _meta: {
+        ui: { resourceUri: RESULTS_URI },
+        "openai/outputTemplate": RESULTS_URI,
+      },
     },
     async ({ answers }) => {
       const text = formatResults(answers);
-      return { content: [{ type: "text", text }] };
+      const flower = getMatchingFlower(answers);
+      return {
+        content: [{ type: "text", text }],
+        structuredContent: {
+          flower: flower
+            ? { id: flower.id, name: flower.name, description: flower.description }
+            : null,
+          answers,
+        },
+      };
     }
   );
 
