@@ -7,79 +7,291 @@
   <style>
     * { box-sizing: border-box; }
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       margin: 0;
       padding: 16px;
-      background: #faf9f7;
+      background: linear-gradient(135deg, #f0fDf4 0%, #e0f2fe 100%);
       color: #1a1a1a;
       line-height: 1.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
     .card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 450px;
+      width: 100%;
+      opacity: 0;
+      transform: scale(0.95);
+      animation: popIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+    
+    /* Animation Container */
+    .animation-container {
+      height: 200px;
+      position: relative;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* SVG Flower Animation */
+    svg.flower {
+      width: 180px;
+      height: 180px;
+      overflow: visible;
+    }
+
+    /* Core Petals */
+    .petal {
+      transform-origin: 50% 70%;
+      opacity: 0;
+      transform: scale(0);
+      transition: fill 1s ease;
+    }
+    
+    .leaf {
+      transform-origin: 50% 90%;
+      opacity: 0;
+      transform: scale(0) rotate(0deg);
+      fill: #22c55e;
+    }
+    
+    .stem {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      stroke: #16a34a;
+      stroke-width: 4;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    /* Bloom Animations */
+    .bloom .stem {
+      animation: drawStem 1.5s ease-out forwards;
+    }
+    
+    .bloom .leaf-left {
+      animation: popLeaf 1s 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      transform-origin: bottom right;
+    }
+    
+    .bloom .leaf-right {
+      animation: popLeafRight 1s 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      transform-origin: bottom left;
+    }
+    
+    .bloom .petal-center {
+      animation: popPetal 1.2s 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .bloom .petal-left {
+      animation: popPetalLeft 1.2s 1.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .bloom .petal-right {
+      animation: popPetalRight 1.2s 1.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .bloom .petal-back-left {
+      animation: popPetalBackLeft 1.2s 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .bloom .petal-back-right {
+      animation: popPetalBackRight 1.2s 1.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Dynamic Colors based on Flower Type */
+    .theme-rose .petal { fill: #ef4444; }
+    .theme-sunflower .petal { fill: #eab308; }
+    .theme-lotus .petal { fill: #ec4899; }
+    .theme-lavender .petal { fill: #8b5cf6; }
+    
+    /* Sunflowers have a dark center */
+    .theme-sunflower .center-disk {
+      opacity: 0;
+      fill: #422006;
+      animation: fadeInCenter 1s 2s forwards;
+    }
+    .center-disk { opacity: 0; }
+
+    /* Keyframes */
+    @keyframes popIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes drawStem {
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes popLeaf {
+      to { opacity: 1; transform: scale(1) rotate(-15deg); }
+    }
+    @keyframes popLeafRight {
+      to { opacity: 1; transform: scale(1) rotate(15deg); }
+    }
+    @keyframes popPetal {
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes popPetalLeft {
+      to { opacity: 1; transform: scale(1) rotate(-25deg); }
+    }
+    @keyframes popPetalRight {
+      to { opacity: 1; transform: scale(1) rotate(25deg); }
+    }
+    @keyframes popPetalBackLeft {
+      to { opacity: 0.8; transform: scale(0.85) rotate(-45deg); }
+    }
+    @keyframes popPetalBackRight {
+      to { opacity: 0.8; transform: scale(0.85) rotate(45deg); }
+    }
+    @keyframes fadeInCenter {
+      to { opacity: 1; }
+    }
+
+    /* Text content animations */
+    .content-area {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideUpContent 1s 2.5s forwards;
+    }
+    
+    @keyframes slideUpContent {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .flower-name {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #2d5a27;
-      margin: 0 0 12px;
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0 0 16px;
+      letter-spacing: -0.02em;
     }
+    
+    .theme-rose .flower-name { color: #dc2626; }
+    .theme-sunflower .flower-name { color: #ca8a04; }
+    .theme-lotus .flower-name { color: #db2777; }
+    .theme-lavender .flower-name { color: #7c3aed; }
+
     .flower-desc {
-      margin: 0 0 20px;
-      color: #444;
+      margin: 0 0 32px;
+      color: #4b5563;
+      font-size: 1.1rem;
+      line-height: 1.7;
+      padding: 0 10px;
     }
+    
     .btn {
       display: inline-block;
-      margin-right: 8px;
-      padding: 10px 20px;
-      background: #2d5a27;
+      padding: 12px 32px;
+      background: #1f2937;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
+      border-radius: 999px;
+      font-size: 1.05rem;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-    .btn:hover { background: #3d7a37; }
-    .btn-secondary { background: #666; }
-    .btn-secondary:hover { background: #555; }
+    .btn:hover { 
+      background: #111827; 
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2 class="flower-name" id="flowerName">—</h2>
-    <p class="flower-desc" id="flowerDesc">Loading…</p>
-    <button id="endBtn" class="btn">Done</button>
+  <div class="card" id="resultCard">
+    <div class="animation-container" id="animationContainer">
+      <!-- Universal Flower SVG that can represent multiple flowers via CSS themes -->
+      <svg class="flower" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Stem -->
+        <path class="stem" d="M50 110 C 50 80, 50 60, 50 50" />
+        
+        <!-- Leaves -->
+        <path class="leaf leaf-left" d="M50 90 C 20 90, 10 70, 50 85Z" />
+        <path class="leaf leaf-right" d="M50 85 C 80 85, 90 65, 50 80Z" />
+        
+        <!-- Back Petals -->
+        <path class="petal petal-back-left" d="M50 50 C 10 30, 20 -10, 50 50Z" />
+        <path class="petal petal-back-right" d="M50 50 C 90 30, 80 -10, 50 50Z" />
+        
+        <!-- Front Petals -->
+        <path class="petal petal-left" d="M50 55 C 10 40, 30 0, 50 55Z" />
+        <path class="petal petal-right" d="M50 55 C 90 40, 70 0, 50 55Z" />
+        <path class="petal petal-center" d="M50 60 C 20 20, 80 20, 50 60Z" />
+        
+        <!-- Center (visible for Sunflower) -->
+        <circle class="center-disk" cx="50" cy="50" r="12" />
+      </svg>
+    </div>
+    
+    <div class="content-area">
+      <h2 class="flower-name" id="flowerName">Growing...</h2>
+      <p class="flower-desc" id="flowerDesc">Computing the petals of your personality.</p>
+      <button id="endBtn" class="btn">Complete Journey</button>
+    </div>
   </div>
+
   <script>
     (function() {
+      const card = document.getElementById('resultCard');
+      const container = document.getElementById('animationContainer');
       const nameEl = document.getElementById('flowerName');
       const descEl = document.getElementById('flowerDesc');
       const endBtn = document.getElementById('endBtn');
+
+      function mapFlowerNameToTheme(name) {
+        if (!name) return '';
+        const lower = name.toLowerCase();
+        if (lower.includes('rose')) return 'theme-rose';
+        if (lower.includes('sunflower')) return 'theme-sunflower';
+        if (lower.includes('lotus')) return 'theme-lotus';
+        if (lower.includes('lavender')) return 'theme-lavender';
+        return 'theme-rose'; // fallback
+      }
 
       function render(data) {
         if (!data) return;
         const f = data.flower;
         if (!f) {
-          nameEl.textContent = '—';
-          descEl.textContent = 'Unable to determine your flower match.';
+          nameEl.textContent = 'A Mystery';
+          descEl.textContent = 'Oops! We could not fully bloom your results. Please try again.';
           return;
         }
-        nameEl.textContent = (f.name || '—') + ' \u{1F338}';
+
+        // Apply theme color
+        const theme = mapFlowerNameToTheme(f.name);
+        card.classList.add(theme);
+        
+        // Trigger bloom animation
+        setTimeout(() => {
+          container.classList.add('bloom');
+        }, 100);
+
+        // Update text
+        nameEl.textContent = f.name;
         descEl.textContent = f.description || '';
       }
 
       function callTool(name, args) {
         window.parent.postMessage({
           jsonrpc: '2.0',
-          id: crypto.randomUUID(),
+          id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
           method: 'tools/call',
           params: { name, arguments: args || {} }
         }, '*');
       }
 
-      endBtn.onclick = () => callTool('end', {});
+      endBtn.onclick = () => {
+         endBtn.textContent = 'Closing...';
+         endBtn.disabled = true;
+         // Slight fade out effect before calling end
+         card.style.transition = 'opacity 0.5s';
+         card.style.opacity = '0';
+         setTimeout(() => callTool('end', {}), 400);
+      };
 
       window.addEventListener('message', (event) => {
         if (event.source !== window.parent) return;
@@ -90,7 +302,9 @@
         }
       }, { passive: true });
 
-      if (window.openai?.toolOutput) render(window.openai.toolOutput?.structuredContent);
+      if (window.openai?.toolOutput) {
+        render(window.openai.toolOutput);
+      }
     })();
   </script>
 </body>

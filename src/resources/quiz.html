@@ -1,104 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plantora Quiz</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       margin: 0;
       padding: 16px;
-      background: #faf9f7;
+      background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
       color: #1a1a1a;
       line-height: 1.5;
+      min-height: 100vh;
     }
+
     .card {
       background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-radius: 16px;
+      padding: 24px 32px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      max-width: 500px;
+      margin: 20px auto;
+      animation: fadeIn 0.6s ease-out;
     }
-    .card h2 { margin: 0 0 20px; font-size: 1.25rem; color: #2d5a27; }
+
+    .card h2 {
+      margin: 0 0 20px;
+      font-size: 1.5rem;
+      color: #166534;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: #16a34a;
+      width: 0%;
+      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
     .question {
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #eee;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 12px;
+      border: 1px solid #f0f0f0;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: slideUp 0.5s forwards;
     }
-    .question:last-of-type { border-bottom: none; }
-    .question-label { font-weight: 600; margin-bottom: 8px; display: block; }
-    .option {
+
+    .question-label {
+      font-weight: 600;
+      margin-bottom: 12px;
       display: block;
-      margin: 6px 0;
-      padding: 10px 12px;
-      background: #f5f5f5;
+      font-size: 1.1rem;
+      color: #1f2937;
+    }
+
+    .option {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      padding: 12px 16px;
+      background: white;
       border-radius: 8px;
       cursor: pointer;
-      border: 2px solid transparent;
+      border: 2px solid #e5e7eb;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      color: #4b5563;
     }
-    .option:hover { background: #eee; }
-    .option.selected { border-color: #2d5a27; background: #e8f5e6; }
-    .option input { margin-right: 8px; }
+
+    .option:hover {
+      border-color: #bbdac5;
+      background: #f8fafc;
+      transform: translateX(4px);
+    }
+
+    .option.selected {
+      border-color: #16a34a;
+      background: #f0fdf4;
+      color: #166534;
+      box-shadow: 0 4px 6px rgba(22, 163, 74, 0.1);
+    }
+
+    .option input {
+      margin-right: 12px;
+      accent-color: #16a34a;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
     .btn {
-      margin-top: 16px;
-      padding: 12px 24px;
-      background: #2d5a27;
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px 24px;
+      background: #16a34a;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 12px;
+      font-size: 1.1rem;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
     }
-    .btn:hover { background: #3d7a37; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .status { margin-top: 12px; color: #666; font-size: 0.9rem; }
+
+    .btn:hover:not(:disabled) {
+      background: #15803d;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      background: #d1d5db;
+      color: #9ca3af;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      margin-top: 16px;
+      color: #4b5563;
+      font-size: 0.95rem;
+      text-align: center;
+      height: 24px;
+      transition: color 0.3s;
+    }
+
+    .status.error {
+      color: #dc2626;
+      font-weight: 500;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
+
 <body>
   <div class="card">
-    <h2>Personality Quiz</h2>
-    <div id="questions"></div>
-    <button id="submitBtn" class="btn">Submit answers</button>
+    <h2><span>✨</span> Discover Your Flower</h2>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div id="questions">
+      <div style="text-align:center; padding: 40px; color:#6b7280;">Loading questions...</div>
+    </div>
+    <button id="submitBtn" class="btn" disabled>Reveal My Match</button>
     <p id="status" class="status"></p>
   </div>
   <script>
-    (function() {
+    (function () {
       const questionsEl = document.getElementById('questions');
       const submitBtn = document.getElementById('submitBtn');
       const statusEl = document.getElementById('status');
+      const progressFill = document.getElementById('progressFill');
       let questions = [];
       let answers = {};
 
+      function updateProgress() {
+        const answeredCount = Object.keys(answers).length;
+        const totalCount = questions.length || 1;
+        const percentage = (answeredCount / totalCount) * 100;
+        progressFill.style.width = percentage + '%';
+
+        if (answeredCount === totalCount && totalCount > 0) {
+          submitBtn.disabled = false;
+          statusEl.textContent = 'All set! Ready to reveal.';
+          statusEl.className = 'status';
+        } else {
+          submitBtn.disabled = true;
+          if (answeredCount > 0) {
+            statusEl.textContent = `${answeredCount} of ${totalCount} answered`;
+            statusEl.className = 'status';
+          }
+        }
+      }
+
       function render(data) {
-        if (!data?.questions?.length) return;
-        questions = data.questions;
+        let incomingQuestions = [];
+        if (Array.isArray(data)) {
+          incomingQuestions = data;
+        } else if (data?.questions && Array.isArray(data.questions)) {
+          incomingQuestions = data.questions;
+        }
+
+        if (!incomingQuestions.length) return;
+        questions = incomingQuestions;
         answers = {};
-        questionsEl.innerHTML = questions.map(q => `
-          <div class="question" data-id="${q.id}">
-            <label class="question-label">${q.text}</label>
+
+        let html = '';
+        questions.forEach((q, index) => {
+          html += `
+          <div class="question" data-id="${q.id}" style="animation-delay: ${index * 0.1}s">
+            <label class="question-label">${index + 1}. ${q.text}</label>
             ${(q.options || []).map(o => `
               <label class="option">
                 <input type="radio" name="${q.id}" value="${o.value}">
                 ${o.label}
               </label>
             `).join('')}
-          </div>
-        `).join('');
+          </div>`;
+        });
+        questionsEl.innerHTML = html;
+
         questionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
           radio.addEventListener('change', () => {
             answers[radio.name] = radio.value;
-            questionsEl.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
-            questionsEl.querySelectorAll('input:checked').forEach(r => {
+            const group = radio.closest('.question');
+            group.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            group.querySelectorAll('input:checked').forEach(r => {
               r.closest('.option').classList.add('selected');
             });
+            updateProgress();
           });
         });
+
+        updateProgress();
       }
 
       function callTool(name, args) {
-        const id = crypto.randomUUID();
+        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
         window.parent.postMessage({
           jsonrpc: '2.0',
           id,
@@ -110,11 +281,13 @@
       submitBtn.onclick = () => {
         const missing = questions.filter(q => !answers[q.id]).map(q => q.id);
         if (missing.length) {
-          statusEl.textContent = 'Please answer all questions.';
+          statusEl.textContent = 'Please answer all questions before proceeding.';
+          statusEl.className = 'status error';
           return;
         }
         submitBtn.disabled = true;
-        statusEl.textContent = 'Submitting…';
+        submitBtn.innerHTML = '<span style="animation: pulse 1s infinite;">Planting seeds...</span>';
+        statusEl.textContent = '';
         callTool('submit_answers', { answers: { ...answers } });
       };
 
@@ -123,20 +296,35 @@
         const msg = event.data;
         if (!msg || msg.jsonrpc !== '2.0') return;
         if (msg.method === 'ui/notifications/tool-result') {
+          console.log('Received tool-result message:', msg);
           const data = msg.params?.structuredContent;
-          if (data?.questions) render(data);
-          if (data?.success !== undefined) {
-            statusEl.textContent = data.message || 'Answers recorded. Loading results…';
+          console.log('Extracted structuredContent:', data);
+          if (data?.questions || Array.isArray(data)) {
+            render(data);
           }
-          submitBtn.disabled = false;
+          if (data?.success !== undefined) {
+            if (data.success) {
+              submitBtn.textContent = 'Growing your flower...';
+              setTimeout(() => {
+                callTool('show_results', { answers: data.answers });
+              }, 600);
+            } else {
+              statusEl.className = 'status error';
+              statusEl.textContent = data.message || 'Error saving answers.';
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Reveal My Match';
+            }
+          }
         }
       }, { passive: true });
 
-      if (window.openai?.toolOutput) {
-        const d = window.openai.toolOutput?.structuredContent;
-        if (d?.questions) render(d);
+      let d = window.openai?.toolOutput?.structuredContent;
+      console.log('toolOutput response:', window.openai?.toolOutput?.structuredContent);
+      if (d && (d?.questions || Array.isArray(d))) {
+        render(d);
       }
     })();
   </script>
 </body>
+
 </html>
