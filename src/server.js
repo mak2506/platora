@@ -17,6 +17,9 @@ import { getMatchingFlower } from "./scoring.js";
 import { END_RESPONSE } from "./tools/end.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+import dotenv from "dotenv";
+dotenv.config({ path: join(__dirname, ".env") });
+
 const WELCOME_URI = "ui://plantora/welcome.html";
 const QUIZ_URI = "ui://plantora/quiz.html";
 const RESULTS_URI = "ui://plantora/results.html";

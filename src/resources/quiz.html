@@ -2,229 +2,218 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plantora Quiz</title>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Plantora - Personality Quiz</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#ec5b13",
+            "background-light": "#f8f6f6",
+            "background-dark": "#221610",
+          },
+          fontFamily: {
+            "display": ["Public Sans"]
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
-      color: #1a1a1a;
-      line-height: 1.5;
-      min-height: 100vh;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 24px 32px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      max-width: 500px;
-      margin: 20px auto;
-      animation: fadeIn 0.6s ease-out;
-    }
-
-    .card h2 {
-      margin: 0 0 20px;
-      font-size: 1.5rem;
-      color: #166534;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .progress-bar {
-      height: 6px;
-      background: #e5e7eb;
-      border-radius: 3px;
-      margin-bottom: 24px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .progress-fill {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      background: #16a34a;
-      width: 0%;
-      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .question {
-      margin-bottom: 24px;
-      padding: 20px;
-      background: #fafafa;
-      border-radius: 12px;
-      border: 1px solid #f0f0f0;
-      opacity: 0;
-      transform: translateY(10px);
-      animation: slideUp 0.5s forwards;
-    }
-
-    .question-label {
-      font-weight: 600;
-      margin-bottom: 12px;
-      display: block;
-      font-size: 1.1rem;
-      color: #1f2937;
-    }
-
-    .option {
-      display: flex;
-      align-items: center;
-      margin: 8px 0;
-      padding: 12px 16px;
-      background: white;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 2px solid #e5e7eb;
-      transition: all 0.2s ease;
-      font-weight: 500;
-      color: #4b5563;
-    }
-
-    .option:hover {
-      border-color: #bbdac5;
-      background: #f8fafc;
-      transform: translateX(4px);
-    }
-
-    .option.selected {
-      border-color: #16a34a;
-      background: #f0fdf4;
-      color: #166534;
-      box-shadow: 0 4px 6px rgba(22, 163, 74, 0.1);
-    }
-
-    .option input {
-      margin-right: 12px;
-      accent-color: #16a34a;
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-
-    .btn {
-      display: block;
-      width: 100%;
-      margin-top: 24px;
-      padding: 14px 24px;
-      background: #16a34a;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-    }
-
-    .btn:hover:not(:disabled) {
-      background: #15803d;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
-    }
-
-    .btn:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    .btn:disabled {
-      background: #d1d5db;
-      color: #9ca3af;
-      box-shadow: none;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .status {
-      margin-top: 16px;
-      color: #4b5563;
-      font-size: 0.95rem;
-      text-align: center;
-      height: 24px;
-      transition: color 0.3s;
-    }
-
-    .status.error {
-      color: #dc2626;
-      font-weight: 500;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(15px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      min-height: max(884px, 100dvh);
     }
   </style>
 </head>
 
-<body>
-  <div class="card">
-    <h2><span>✨</span> Discover Your Flower</h2>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill"></div>
+<body class="bg-background-light dark:bg-background-dark font-display">
+  <div
+    class="relative mx-auto flex h-auto min-h-screen max-w-md w-full flex-col bg-emerald-50 dark:bg-stone-950 overflow-x-hidden">
+    <!-- Header -->
+    <div class="flex items-center p-4 pb-2 justify-between">
+      <div id="backBtn"
+        class="text-emerald-900 dark:text-emerald-100 flex size-12 shrink-0 items-center justify-center cursor-pointer opacity-50 pointer-events-none transition-opacity">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </div>
+      <h2
+        class="text-emerald-900 dark:text-emerald-50 text-xl font-bold leading-tight tracking-tight flex-1 text-center pr-12">
+        Plantora
+      </h2>
     </div>
-    <div id="questions">
+
+    <!-- Main Quiz Container (Hidden initially) -->
+    <div id="quizContainer" style="display: none; flex-direction: column; flex: 1;">
+      <!-- Progress Section -->
+      <div class="flex flex-col gap-3 p-4">
+        <div class="flex gap-6 justify-between items-end">
+          <p id="progressText"
+            class="text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase tracking-widest">Question 1 of 4
+          </p>
+          <p id="progressPercent" class="text-emerald-600 dark:text-emerald-400 text-sm font-semibold">25%</p>
+        </div>
+        <div class="rounded-full bg-emerald-200 dark:bg-emerald-900/40 h-3 overflow-hidden">
+          <div id="progressFill"
+            class="h-full rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-300"
+            style="width: 25%;"></div>
+        </div>
+      </div>
+
+      <!-- Question Section -->
+      <div class="px-6 pt-6 pb-4 flex flex-col items-center text-center">
+        <div class="mb-4 text-6xl">🌻</div>
+        <h3 id="questionText" class="text-emerald-950 dark:text-white text-2xl font-extrabold leading-tight">
+          Loading question...
+        </h3>
+      </div>
+
+      <!-- Hero Illustration -->
+      <div class="@container px-4 py-2">
+        <div
+          class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-3xl min-h-[180px] shadow-lg border-4 border-white dark:border-emerald-900"
+          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANuKYZqDdx53wCB0nE1Yi_ISxyNpK1uRzfZquETCqrn--PdZLoWeOft2Q9U5IQkLT26NP-ejRiqgiCHLQrfAs7hnisSpDz-FnpwvNFEpuRF-A5UUd_d7M-v2_XmKvzs3KbkA7OS6zN6pqwW1c_RBjHJ4VqiGe-eUHvgmKeH3v-MAlShKVLwPADdGND4uTheBnNRU3s-nOx6QbtwOexWYiTAS5s_cPHqv3ZMcb3fVTXlcWolGkq4eIglq_CTTrntAZGS2FMPt29vko");'>
+        </div>
+      </div>
+
+      <!-- Options List -->
+      <div id="optionsContainer" class="flex flex-col gap-4 p-6">
+        <!-- Options injected here via JS -->
+      </div>
+
+      <!-- Footer Action -->
+      <div class="mt-auto p-6 pb-10">
+        <button id="continueBtn" disabled
+          class="w-full bg-primary hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all">
+          <span id="continueText">Continue</span>
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <p id="status" class="text-center text-red-500 text-xs mt-2 font-medium"></p>
+        <p
+          class="text-center text-emerald-600/60 dark:text-emerald-400/40 text-xs mt-4 font-medium uppercase tracking-tighter">
+          Your plant soul is waiting to be found
+        </p>
+      </div>
+    </div>
+
+    <!-- Initial Loading State -->
+    <div id="loadingState" class="flex flex-col items-center justify-center flex-1 p-6">
       <div style="text-align:center; padding: 40px; color:#6b7280;">Loading questions...</div>
     </div>
-    <button id="submitBtn" class="btn" disabled>Reveal My Match</button>
-    <p id="status" class="status"></p>
   </div>
+
   <script>
-    (function () {
-      const questionsEl = document.getElementById('questions');
-      const submitBtn = document.getElementById('submitBtn');
-      const statusEl = document.getElementById('status');
-      const progressFill = document.getElementById('progressFill');
-      let questions = [];
-      let answers = {};
+      (function () {
+        const quizContainer = document.getElementById('quizContainer');
+        const loadingState = document.getElementById('loadingState');
+        const questionTextEl = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const continueBtn = document.getElementById('continueBtn');
+        const continueText = document.getElementById('continueText');
+        const statusEl = document.getElementById('status');
+        const progressText = document.getElementById('progressText');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressFill = document.getElementById('progressFill');
+        const backBtn = document.getElementById('backBtn');
 
-      function updateProgress() {
-        const answeredCount = Object.keys(answers).length;
-        const totalCount = questions.length || 1;
-        const percentage = (answeredCount / totalCount) * 100;
-        progressFill.style.width = percentage + '%';
+        let questions = [];
+        let answers = {};
+        let currentIndex = 0;
 
-        if (answeredCount === totalCount && totalCount > 0) {
-          submitBtn.disabled = false;
-          statusEl.textContent = 'All set! Ready to reveal.';
-          statusEl.className = 'status';
+        function updateProgressUI() {
+          const total = questions.length || 1;
+          const currentNum = currentIndex + 1;
+          const pct = Math.round((currentNum / total) * 100);
+
+          progressText.textContent = `Question ${currentNum} of ${total}`;
+          progressPercent.textContent = `${pct}%`;
+          progressFill.style.width = `${pct}%`;
+
+        if (currentIndex === total - 1) {
+          continueText.textContent = 'Reveal My Match';
         } else {
-          submitBtn.disabled = true;
-          if (answeredCount > 0) {
-            statusEl.textContent = `${answeredCount} of ${totalCount} answered`;
-            statusEl.className = 'status';
-          }
+          continueText.textContent = 'Continue';
+        }
+
+        if (currentIndex > 0) {
+          backBtn.classList.remove('opacity-50', 'pointer-events-none');
+        } else {
+          backBtn.classList.add('opacity-50', 'pointer-events-none');
         }
       }
+
+      function renderCurrentQuestion() {
+        if (!questions.length) return;
+        
+        const q = questions[currentIndex];
+        questionTextEl.textContent = q.text;
+
+        const selectedVal = answers[q.id];
+        continueBtn.disabled = !selectedVal;
+
+        let html = '';
+        (q.options || []).forEach(o => {
+          const isSelected = selectedVal === o.value;
+          html += `
+          <label class="option-label group relative flex items-center gap-4 rounded-2xl border-2 ${isSelected ? 'border-primary/50' : 'border-emerald-100 dark:border-emerald-900/30'} bg-white dark:bg-stone-900 p-4 shadow-sm hover:border-primary/50 transition-all cursor-pointer">
+            <input class="peer h-6 w-6 border-2 border-emerald-200 text-primary focus:ring-primary focus:ring-offset-0 checked:border-primary" name="${q.id}" type="radio" value="${o.value}" ${isSelected ? 'checked' : ''} />
+            <div class="flex grow flex-col">
+              <p class="text-emerald-900 dark:text-emerald-100 text-base font-semibold leading-normal">${o.label}</p>
+            </div>
+          </label>`;
+        });
+        optionsContainer.innerHTML = html;
+
+        // Listeners for new radio buttons
+        optionsContainer.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', () => {
+             answers[q.id] = radio.value;
+             continueBtn.disabled = false;
+             
+             // Visual updates for selected option
+             optionsContainer.querySelectorAll('.option-label').forEach(lbl => {
+               lbl.classList.remove('border-primary/50');
+               lbl.classList.add('border-emerald-100', 'dark:border-emerald-900/30');
+             });
+             radio.closest('.option-label').classList.remove('border-emerald-100', 'dark:border-emerald-900/30');
+             radio.closest('.option-label').classList.add('border-primary/50');
+          });
+        });
+
+        updateProgressUI();
+      }
+
+      backBtn.onclick = () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCurrentQuestion();
+        }
+      };
+
+      continueBtn.onclick = () => {
+        const q = questions[currentIndex];
+        if (!answers[q.id]) {
+          statusEl.textContent = 'Please select an option.';
+          return;
+        }
+        statusEl.textContent = '';
+
+        if (currentIndex < questions.length - 1) {
+          // Go to next question
+          currentIndex++;
+          renderCurrentQuestion();
+        } else {
+          // Final Submit
+          continueBtn.disabled = true;
+          continueText.innerHTML = '<span style="animation: pulse 1s infinite;">Planting seeds...</span>';
+          callTool('submit_answers', { answers: { ...answers } });
+        }
+      };
 
       function render(data) {
         let incomingQuestions = [];
@@ -235,37 +224,17 @@
         }
 
         if (!incomingQuestions.length) return;
-        questions = incomingQuestions;
-        answers = {};
-
-        let html = '';
-        questions.forEach((q, index) => {
-          html += `
-          <div class="question" data-id="${q.id}" style="animation-delay: ${index * 0.1}s">
-            <label class="question-label">${index + 1}. ${q.text}</label>
-            ${(q.options || []).map(o => `
-              <label class="option">
-                <input type="radio" name="${q.id}" value="${o.value}">
-                ${o.label}
-              </label>
-            `).join('')}
-          </div>`;
-        });
-        questionsEl.innerHTML = html;
-
-        questionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
-          radio.addEventListener('change', () => {
-            answers[radio.name] = radio.value;
-            const group = radio.closest('.question');
-            group.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
-            group.querySelectorAll('input:checked').forEach(r => {
-              r.closest('.option').classList.add('selected');
-            });
-            updateProgress();
-          });
-        });
-
-        updateProgress();
+        
+        loadingState.style.display = 'none';
+        quizContainer.style.display = 'flex';
+        
+        // Initialize if empty
+        if (questions.length === 0) {
+          questions = incomingQuestions;
+          answers = {};
+          currentIndex = 0;
+          renderCurrentQuestion();
+        }
       }
 
       function callTool(name, args) {
@@ -278,48 +247,32 @@
         }, '*');
       }
 
-      submitBtn.onclick = () => {
-        const missing = questions.filter(q => !answers[q.id]).map(q => q.id);
-        if (missing.length) {
-          statusEl.textContent = 'Please answer all questions before proceeding.';
-          statusEl.className = 'status error';
-          return;
-        }
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span style="animation: pulse 1s infinite;">Planting seeds...</span>';
-        statusEl.textContent = '';
-        callTool('submit_answers', { answers: { ...answers } });
-      };
-
       window.addEventListener('message', (event) => {
         if (event.source !== window.parent) return;
         const msg = event.data;
         if (!msg || msg.jsonrpc !== '2.0') return;
+        
         if (msg.method === 'ui/notifications/tool-result') {
-          console.log('Received tool-result message:', msg);
           const data = msg.params?.structuredContent;
-          console.log('Extracted structuredContent:', data);
           if (data?.questions || Array.isArray(data)) {
             render(data);
           }
           if (data?.success !== undefined) {
             if (data.success) {
-              submitBtn.textContent = 'Growing your flower...';
+              continueText.textContent = 'Growing your flower...';
               setTimeout(() => {
                 callTool('show_results', { answers: data.answers });
               }, 600);
             } else {
-              statusEl.className = 'status error';
               statusEl.textContent = data.message || 'Error saving answers.';
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Reveal My Match';
+              continueBtn.disabled = false;
+              continueText.textContent = 'Reveal My Match';
             }
           }
         }
       }, { passive: true });
 
       let d = window.openai?.toolOutput?.structuredContent;
-      console.log('toolOutput response:', window.openai?.toolOutput?.structuredContent);
       if (d && (d?.questions || Array.isArray(d))) {
         render(d);
       }

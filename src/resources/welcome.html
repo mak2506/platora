@@ -1,154 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plantora Welcome</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: linear-gradient(135deg, #f0fDf4 0%, #e0f2fe 100%);
-      color: #1a1a1a;
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Plantora Welcome</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'plantora-joy-bg': '#E6F4EA',
+            'plantora-vibrant-green': '#4BC47D',
+            'plantora-sunny': '#FFCE45',
+            'plantora-deep-green': '#2D5A27',
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in-out': 'fadeInOut 4s ease-in-out infinite',
+            'float': 'float 3s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeInOut: {
+              '0%, 100%': { opacity: 0, transform: 'translateY(5px)' },
+              '10%, 90%': { opacity: 1, transform: 'translateY(0)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-15px)' },
+            }
+          }
+        }
+      }
     }
-    .card {
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 32px 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
-      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      border: 1px solid rgba(255,255,255,0.5);
+  </script>
+<style>
+    /* Progress bar animation */
+    @keyframes progress {
+      0% { width: 0%; }
+      100% { width: 100%; }
     }
-    .icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
-      animation: float 3s ease-in-out infinite;
-      display: inline-block;
+    .animate-progress {
+      animation: progress 5s linear infinite;
     }
-    .card h2 {
-      margin: 0 0 12px;
-      font-size: 1.75rem;
-      color: #166534;
-      font-weight: 700;
-    }
-    .card p {
-      margin: 0 0 24px;
-      color: #4b5563;
-      white-space: pre-wrap;
-      font-size: 1.05rem;
-    }
-    .btn {
-      display: inline-block;
-      padding: 14px 28px;
-      background: #16a34a;
-      color: white;
-      border: none;
-      border-radius: 999px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
+
+    /* Button styles from welcome.html updated to match new design */
+    .btn-gradient {
+      background: linear-gradient(135deg, #4BC47D 0%, #2D5A27 100%);
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-      position: relative;
-      overflow: hidden;
     }
-    .btn::before {
-      content: "";
-      position: absolute;
-      top: 0; left: -100%; width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: all 0.5s;
-    }
-    .btn:hover::before {
-      left: 100%;
-    }
-    .btn:hover { 
-      background: #15803d;
+    .btn-gradient:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+      box-shadow: 0 6px 16px rgba(45, 90, 39, 0.4);
     }
-    .btn:active {
+    .btn-gradient:active {
       transform: translateY(1px);
     }
-    .btn:disabled {
+    .btn-gradient:disabled {
       background: #9ca3af;
       cursor: not-allowed;
       transform: none;
       box-shadow: none;
     }
-
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-  </style>
+</style>
 </head>
-<body>
-  <div class="card">
-    <div class="icon">🌱</div>
-    <h2>Plantora</h2>
-    <p id="message">Awakening the garden...</p>
-    <button id="startBtn" class="btn" style="display: none;">Start journey</button>
-  </div>
-  <script>
-    (function() {
-      const messageEl = document.getElementById('message');
-      const startBtn = document.getElementById('startBtn');
+<body class="bg-plantora-joy-bg h-screen w-full flex items-center justify-center m-0 overflow-hidden font-sans">
+<main class="relative w-full max-w-md px-6 flex flex-col items-center justify-center">
+<section class="bg-white w-full rounded-[2.5rem] p-12 shadow-[0_32px_64px_-16px_rgba(45,90,39,0.15)] flex flex-col items-center text-center transition-all duration-700 ease-out transform scale-100 border border-emerald-50 card">
+<div class="mb-4 animate-float text-6xl" data-purpose="floating-emoji">
+  🌻
+</div>
 
-      function render(data) {
-        if (!data) return;
-        const msg = data.message || 'Welcome to Plantora! Answer a few simple questions to discover your true inner flower.';
-        messageEl.textContent = msg.replace(/\*\*/g, '').replace(/`/g, '');
-        startBtn.style.display = 'inline-block';
-        startBtn.style.animation = 'fadeInUp 0.5s 0.2s both';
+<h1 class="text-4xl font-extrabold text-plantora-vibrant-green mb-3 tracking-tight">Plantora</h1>
+<p id="message" class="text-emerald-800/60 text-base font-semibold mb-10 whitespace-pre-wrap">Awakening the garden...</p>
+
+<!-- Loading Progress -->
+<div id="loadingContainer" class="w-full h-2 bg-emerald-50 rounded-full overflow-hidden mb-12">
+<div class="h-full bg-gradient-to-r from-plantora-vibrant-green to-plantora-sunny rounded-full animate-progress shadow-[0_0_12px_rgba(75,196,125,0.4)]" style="width: 30%;"></div>
+</div>
+
+<!-- The start button (initially hidden) -->
+<button id="startBtn" class="btn-gradient text-white px-8 py-3 rounded-full text-lg font-semibold w-full max-w-[200px] mb-8" style="display: none;">Start journey</button>
+
+<div class="min-h-[4rem] w-full flex items-center justify-center px-6 py-3 bg-emerald-50/30 rounded-2xl border border-white/50">
+<p class="text-plantora-deep-green text-sm font-medium italic animate-fade-in-out" id="tip-text">
+        Tip: Monstera loves indirect light
+      </p>
+</div>
+</section>
+
+</main>
+
+<script>
+  // Tip rotation
+  const tips = [
+    "Tip: Monstera loves indirect light",
+    "Tip: Water succulents only when soil is dry",
+    "Tip: Clean leaves help plants breathe better",
+    "Tip: Most indoor plants prefer a humid environment",
+    "Tip: Use filtered water for sensitive ferns",
+    "Tip: Rotate your pots for even growth"
+  ];
+
+  let currentTipIndex = 0;
+  const tipElement = document.getElementById('tip-text');
+
+  function rotateTip() {
+    currentTipIndex = (currentTipIndex + 1) % tips.length;
+    setTimeout(() => {
+      tipElement.textContent = tips[currentTipIndex];
+    }, 500); 
+  }
+  setInterval(rotateTip, 4000);
+
+  // Core Logic from welcome.html
+  (function() {
+    const messageEl = document.getElementById('message');
+    const startBtn = document.getElementById('startBtn');
+    const loadingContainer = document.getElementById('loadingContainer');
+
+    function render(data) {
+      if (!data) return;
+      const msg = data.message || 'Welcome to Plantora! Answer a few simple questions to discover your true inner flower.';
+      messageEl.textContent = msg.replace(/\*\*/g, '').replace(/`/g, '');
+      
+      // Hide loading bar and show button
+      loadingContainer.style.display = 'none';
+      startBtn.style.display = 'inline-block';
+      startBtn.style.animation = 'fadeInUp 0.5s 0.2s both';
+    }
+
+    function callTool(name, args) {
+      const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      window.parent.postMessage({
+        jsonrpc: '2.0',
+        id,
+        method: 'tools/call',
+        params: { name, arguments: args || {} }
+      }, '*');
+    }
+
+    startBtn.onclick = () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Planting seeds...';
+      document.querySelector('.card').style.animation = 'fadeInUp 0.5s reverse forwards';
+      setTimeout(() => callTool('start', {}), 400);
+    };
+
+    window.addEventListener('message', (event) => {
+      if (event.source !== window.parent) return;
+      const msg = event.data;
+      if (!msg || msg.jsonrpc !== '2.0') return;
+      if (msg.method === 'ui/notifications/tool-result') {
+        const data = msg.params?.structuredContent;
+        render(data);
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start journey';
       }
+    }, { passive: true });
 
-      function callTool(name, args) {
-        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-        window.parent.postMessage({
-          jsonrpc: '2.0',
-          id,
-          method: 'tools/call',
-          params: { name, arguments: args || {} }
-        }, '*');
-      }
-
-      startBtn.onclick = () => {
-        startBtn.disabled = true;
-        startBtn.textContent = 'Planting seeds...';
-        document.querySelector('.card').style.animation = 'fadeInUp 0.5s reverse forwards';
-        setTimeout(() => callTool('start', {}), 400);
-      };
-
-      window.addEventListener('message', (event) => {
-        if (event.source !== window.parent) return;
-        const msg = event.data;
-        if (!msg || msg.jsonrpc !== '2.0') return;
-        if (msg.method === 'ui/notifications/tool-result') {
-          const data = msg.params?.structuredContent;
-          render(data);
-          startBtn.disabled = false;
-          startBtn.textContent = 'Start journey';
-        }
-      }, { passive: true });
-
-      if (window.openai?.toolOutput) render(window.openai.toolOutput);
-    })();
-  </script>
+    if (window.openai?.toolOutput) render(window.openai.toolOutput);
+  })();
+</script>
 </body>
 </html>
