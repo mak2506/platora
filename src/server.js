@@ -6,25 +6,22 @@ import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { SAY_HELLO_RESPONSE } from "./tools/say-hello.js";
-import { getQuestions } from "./tools/start.js";
-import { validateAnswers } from "./tools/submit-answers.js";
-import { formatResults } from "./tools/show-results.js";
-import { getMatchingFlower } from "./scoring.js";
 import { END_RESPONSE } from "./tools/end.js";
+import { getSession, cleanupSessions } from "./sessions.js";
+import { callGroq } from "./groqClient.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import dotenv from "dotenv";
-dotenv.config({ path: join(__dirname, ".env") });
+dotenv.config({ path: join(__dirname, "..", ".env") });
 
 const WELCOME_URI = "ui://plantora/welcome.html";
 const QUIZ_URI = "ui://plantora/quiz.html";
 const RESULTS_URI = "ui://plantora/results.html";
 
-function createMcpServer() {
+function createMcpServer(getSessionId) {
   const mcpServer = new McpServer({
     name: "plantora",
     version: "1.0.0",
@@ -81,39 +78,89 @@ function createMcpServer() {
       _meta: {
         ui: { resourceUri: WELCOME_URI },
         "openai/outputTemplate": WELCOME_URI,
+        "openai/toolInvocation/invoking": "Waking up the garden...",
+        "openai/toolInvocation/invoked": "Welcome to Plantora"
       },
     },
-    async () => ({
-      content: [{ type: "text", text: SAY_HELLO_RESPONSE }],
-      structuredContent: {
-        message: SAY_HELLO_RESPONSE,
-        ctaText: "Start quiz",
-      },
-    })
+    async () => {
+      const session = getSession(getSessionId());
+      if (session) session.progress = 0;
+      return {
+        content: [{ type: "text", text: `${SAY_HELLO_RESPONSE}\n\n[A welcome card has been presented in the UI.]` }],
+        structuredContent: {
+          message: SAY_HELLO_RESPONSE,
+          ctaText: "Start quiz",
+        },
+      };
+    }
   );
 
   mcpServer.registerTool(
     "start",
     {
       description:
-        "Start the personality quiz. Returns 4 multiple-choice questions. Call this when the user agrees to begin.",
+        "Start the personality quiz. Returns 10 multiple-choice questions one-by-one. Call this when the user agrees to begin.",
       _meta: {
         ui: { resourceUri: QUIZ_URI },
         "openai/outputTemplate": QUIZ_URI,
+        "openai/toolInvocation/invoking": "Planting seeds...",
+        "openai/toolInvocation/invoked": "Quiz started"
       },
     },
     async () => {
-      const { questions } = getQuestions();
-      const text = JSON.stringify(questions, null, 2);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Here are the quiz questions. Ask the user each one and collect their answers (q1, q2, q3, q4), then call submit_answers with the collected answers.\n\n${text}`,
-          },
-        ],
-        structuredContent: { questions },
-      };
+      console.log("[Tool: start] Initializing quiz session and generating first question...");
+      const session = getSession(getSessionId());
+      if (session) {
+        session.questions = [];
+        session.answers = {};
+      }
+
+      const prompt = `Generate exactly ONE unique, creative, and plant-themed multiple-choice question (4 options) to help determine a user's personality for a "Which flower are you?" quiz. 
+      This is the FIRST question. Focus on a general personality trait (e.g., introversion vs extroversion).
+      Important: ALWAYS return valid JSON.
+      Format:
+      {
+        "id": "q1",
+        "text": "The question text",
+        "options": [
+          { "value": "a", "label": "Option A text" },
+          { "value": "b", "label": "Option B text" },
+          { "value": "c", "label": "Option C text" },
+          { "value": "d", "label": "Option D text" }
+        ]
+      }`;
+
+      try {
+        const responseText = await callGroq({ 
+          prompt, 
+          system: "You are a helpful assistant that only outputs JSON.",
+          model: "llama-3.3-70b-versatile"
+        });
+        
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}') + 1;
+        const question = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+        
+        if (session) {
+          session.questions = [question];
+          session.progress = 1;
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: "The personality quiz has started. A dedicated UI has been presented to the user to answer the questions. Stand by for the user to complete the quiz in the UI.",
+            },
+          ],
+          structuredContent: { questions: [question], currentCount: 1, totalCount: 10, isComplete: false },
+        };
+      } catch (err) {
+        console.error("LLM start error:", err);
+        const fallback = { id: "q1", text: "How would you describe your perfect afternoon?", options: [{value:"a", label:"Quietly reading"}, {value:"b", label:"Out in nature"}, {value:"c", label:"With friends"}, {value:"d", label:"Trying something new"}] };
+        if (session) { session.questions = [fallback]; session.progress = 1; }
+        return { content: [{type:"text", text:"Started with fallback."}], structuredContent: { questions: [fallback], currentCount: 1, totalCount: 10, isComplete: false } };
+      }
     }
   );
 
@@ -121,29 +168,95 @@ function createMcpServer() {
     "submit_answers",
     {
       description:
-        "Submit and validate the user's quiz answers. Pass answers as an object mapping question IDs (q1, q2, q3, q4) to option values (a, b, c, or d). Call show_results after successful submission.",
+        "Submit user's answer for the current question and get the next one. Pass current answer as an object mapping the question ID to the option value (e.g. { q1: 'a' }). Returns the next question or completion status.",
       inputSchema: {
         answers: z
           .record(z.string(), z.string())
           .describe(
-            "Object mapping question IDs to option values, e.g. { q1: 'a', q2: 'b', q3: 'c', q4: 'd' }"
+            "The user's answer for the current question, e.g. { q1: 'a' }"
           ),
       },
       _meta: {
         ui: { resourceUri: QUIZ_URI },
         "openai/outputTemplate": QUIZ_URI,
+        "openai/toolInvocation/invoking": "Reviewing your choices...",
+        "openai/toolInvocation/invoked": "Answers submitted"
       },
     },
     async ({ answers }) => {
-      const result = validateAnswers(answers);
-      return {
-        content: [{ type: "text", text: result.message }],
-        structuredContent: {
-          success: result.valid,
-          message: result.message,
-          answers: result.valid ? answers : undefined,
-        },
-      };
+      console.log(`[Tool: submit_answers] Received answers: ${JSON.stringify(answers)}`);
+      const session = getSession(getSessionId());
+      if (session) {
+        session.answers = { ...session.answers, ...answers };
+        const currentCount = session.questions.length;
+
+        if (currentCount < 10) {
+          // Generate next question
+          const history = session.questions.map(q => q.text).join(" | ");
+          const nextId = `q${currentCount + 1}`;
+          const prompt = `Generate exactly ONE unique, creative, and plant-themed multiple-choice question (4 options) for a "Which flower are you?" quiz. 
+          Focus on a COMPLETELY DIFFERENT personality dimension than previous questions (e.g., if previous were about social style, make this about stress response, risk, or environment).
+          Important: MUST NOT be semantically similar to these previous questions: ${history}.
+          We are on question ${currentCount + 1} of 10.
+          Format your response as a JSON object:
+          {
+            "id": "${nextId}",
+            "text": "The question text",
+            "options": [
+              { "value": "a", "label": "Option A" },
+              { "value": "b", "label": "Option B" },
+              { "value": "c", "label": "Option C" },
+              { "value": "d", "label": "Option D" }
+            ]
+          }`;
+
+          try {
+            const responseText = await callGroq({ 
+              prompt, 
+              system: "You are a helpful assistant that only outputs JSON.",
+              model: "llama-3.3-70b-versatile"
+            });
+            const jsonStart = responseText.indexOf('{');
+            const jsonEnd = responseText.lastIndexOf('}') + 1;
+            const nextQuestion = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+            
+            session.questions.push(nextQuestion);
+            session.progress = currentCount + 1;
+
+            return {
+              content: [{ type: "text", text: `Question ${currentCount + 1} ready.` }],
+              structuredContent: {
+                success: true,
+                message: `Moving to question ${currentCount + 1}`,
+                nextQuestion,
+                currentCount: currentCount + 1,
+                totalCount: 10,
+                isComplete: false
+              },
+            };
+          } catch (err) {
+            console.error("LLM next question error:", err);
+            return {
+              content: [{ type: "text", text: "Something went wrong generating the next question. Please try again." }],
+              structuredContent: { success: false, message: "LLM error" }
+            };
+          }
+        } else {
+          // Quiz complete
+          session.progress = 'ready_for_results';
+          return {
+            content: [{ type: "text", text: "All 10 questions answered! You're ready to see your results." }],
+            structuredContent: {
+              success: true,
+              message: "Quiz complete",
+              isComplete: true,
+              currentCount: 10,
+              totalCount: 10
+            },
+          };
+        }
+      }
+      return { content: [{type:"text", text:"Session error"}], structuredContent: { success: false, message:"No session" } };
     }
   );
 
@@ -151,31 +264,76 @@ function createMcpServer() {
     "show_results",
     {
       description:
-        "Compute and display the user's flower match based on their submitted answers. Call after submit_answers succeeds.",
+        "Compute and display the user's flower match based on their answers.",
       inputSchema: {
         answers: z
           .record(z.string(), z.string())
+          .optional()
           .describe(
-            "The same answers object passed to submit_answers, e.g. { q1: 'a', q2: 'b', q3: 'c', q4: 'd' }"
+            "Optional: Object mapping question IDs to option values. If not provided, session data will be used."
           ),
       },
       _meta: {
         ui: { resourceUri: RESULTS_URI },
         "openai/outputTemplate": RESULTS_URI,
+        "openai/toolInvocation/invoking": "Blooming your flower...",
+        "openai/toolInvocation/invoked": "Results ready"
       },
     },
-    async ({ answers }) => {
-      const text = formatResults(answers);
-      const flower = getMatchingFlower(answers);
-      return {
-        content: [{ type: "text", text }],
-        structuredContent: {
-          flower: flower
-            ? { id: flower.id, name: flower.name, description: flower.description }
-            : null,
-          answers,
-        },
-      };
+    async () => {
+      const session = getSession(getSessionId());
+      if (!session || Object.keys(session.answers).length === 0) {
+        return { content: [{type:"text", text:"No quiz data found to calculate results."}], structuredContent: { success: false } };
+      }
+
+      const flowersData = JSON.parse(readFileSync(join(__dirname, "..", "data", "flowers.json"), "utf-8"));
+      const userAnswers = JSON.stringify(session.answers);
+      const questionHistory = JSON.stringify(session.questions.map(q => ({ q: q.text, a: session.answers[q.id] })));
+
+      const prompt = `Analyze this user's personality based on their answers to a 10-question flower quiz and identify which flower from the provided list matches them best.
+      
+      User Answers: ${questionHistory}
+      
+      Available Flowers: ${JSON.stringify(flowersData.flowers)}
+      
+      Choose exactly ONE flower. Explain why it matches their personality.
+      Return your response as a JSON object:
+      {
+        "flower": {
+          "id": "flower_id",
+          "name": "Flower Name",
+          "description": "Personalized description of why this flower matches the user based on their specific answers."
+        }
+      }`;
+
+      try {
+        console.log("[Tool: show_results] Requesting personality match from Groq...");
+        const responseText = await callGroq({ 
+          prompt, 
+          system: "You are a professional personality psychologist and botanist who only outputs JSON.",
+          model: "llama-3.3-70b-versatile"
+        });
+        console.log(`[Tool: show_results] LLM raw response length: ${responseText.length}`);
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}') + 1;
+        const result = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+        
+        session.progress = 'complete';
+        
+        return {
+          content: [{ type: "text", text: `Your results are ready! You are a ${result.flower.name}.\n\n[The results are visible in the UI.]` }],
+          structuredContent: {
+            flower: result.flower,
+            answers: session.answers
+          },
+        };
+      } catch (err) {
+        console.error("LLM result error:", err);
+        return {
+          content: [{ type: "text", text: "Something went wrong calculating your results." }],
+          structuredContent: { success: false, message: "LLM error" }
+        };
+      }
     }
   );
 
@@ -196,100 +354,120 @@ function createMcpServer() {
 const transports = {};
 const PORT = parseInt(process.env.PORT || "3553", 10);
 
-const mcpPostHandler = async (req, res) => {
+const requestListener = async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const sessionId = req.headers["mcp-session-id"];
+  console.log(`[Server] ${req.method} ${url.pathname} (Session ID: ${sessionId || 'new'})`);
 
-  try {
-    let transport;
-    if (sessionId && transports[sessionId]) {
-      transport = transports[sessionId];
-    } else if (!sessionId && isInitializeRequest(req.body)) {
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (sid) => {
-          transports[sid] = transport;
-        },
-      });
-      transport.onclose = () => {
-        const sid = transport.sessionId;
-        if (sid && transports[sid]) {
-          delete transports[sid];
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id');
+  res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(240).end();
+    return;
+  }
+
+  if (url.pathname === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ name: "plantora", version: "1.0.0", status: "ok" }));
+    return;
+  }
+
+  if (url.pathname === '/mcp') {
+    try {
+      let transport;
+      if (sessionId && transports[sessionId]) {
+        transport = transports[sessionId];
+      } else if (req.method === 'POST') {
+        // Handle Initialize or new session
+        const body = await new Promise((resolve, reject) => {
+          let data = '';
+          req.on('data', chunk => data += chunk);
+          req.on('end', () => {
+            try { 
+              const parsed = JSON.parse(data);
+              console.log(`[Server] Parsed POST body: ${JSON.stringify(parsed)}`);
+              resolve(parsed); 
+            }
+            catch (e) { 
+              console.error("[Server] JSON parse error in body:", e.message);
+              resolve({}); 
+            }
+          });
+          req.on('error', reject);
+        });
+
+        if (isInitializeRequest(body)) {
+          const sid = randomUUID();
+          console.log(`[Server] Initializing NEW session: ${sid}`);
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => sid,
+            onsessioninitialized: (finalSid) => {
+              transports[finalSid] = transport;
+            },
+          });
+          transport.onclose = () => {
+            if (sid && transports[sid]) {
+              console.log(`[Server] Session closed: ${sid}`);
+              delete transports[sid];
+              cleanupSessions();
+            }
+          };
+          
+          res.setHeader('mcp-session-id', sid);
+          const server = createMcpServer(() => transport.sessionId);
+          await server.connect(transport);
+          await transport.handleRequest(req, res, body);
+          return;
         }
-      };
-      const server = createMcpServer();
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-      return;
-    } else {
-      res.status(400).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Bad Request: No valid session ID or initialize request",
-        },
-        id: null,
-      });
-      return;
-    }
+      }
 
-    await transport.handleRequest(req, res, req.body);
-  } catch (error) {
-    console.error("MCP request error:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
-        id: null,
-      });
+      if (transport) {
+        if (req.method === 'POST') {
+          const body = await new Promise((resolve, reject) => {
+            let data = '';
+            req.on('data', chunk => data += chunk);
+            req.on('end', () => {
+              try { resolve(JSON.parse(data)); }
+              catch (e) { resolve({}); }
+            });
+            req.on('error', reject);
+          });
+          await transport.handleRequest(req, res, body);
+        } else {
+          await transport.handleRequest(req, res);
+        }
+      } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          jsonrpc: "2.0",
+          error: { code: -32000, message: "No valid session or initialize request" },
+          id: null,
+        }));
+      }
+    } catch (error) {
+      console.error("MCP handler error:", error);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" } }));
+      }
     }
-  }
-};
-
-const mcpGetHandler = async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"];
-  if (!sessionId || !transports[sessionId]) {
-    res.status(400).send("Invalid or missing session ID");
     return;
   }
-  const transport = transports[sessionId];
-  await transport.handleRequest(req, res);
+
+  res.writeHead(404).end('Not Found');
 };
-
-const mcpDeleteHandler = async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"];
-  if (!sessionId || !transports[sessionId]) {
-    res.status(400).send("Invalid or missing session ID");
-    return;
-  }
-  const transport = transports[sessionId];
-  await transport.handleRequest(req, res);
-};
-
-const allowedHosts = process.env.MCP_ALLOWED_HOSTS
-  ? process.env.MCP_ALLOWED_HOSTS.split(",").map((h) => h.trim()).filter(Boolean)
-  : [
-      "127.0.0.1",
-      "localhost",
-      "::1"
-    ];
-
-const app = createMcpExpressApp({ host: "0.0.0.0", allowedHosts });
-app.post("/mcp", mcpPostHandler);
-app.get("/mcp", mcpGetHandler);
-app.delete("/mcp", mcpDeleteHandler);
-
-// Health check
-app.get("/", (req, res) => {
-  res.json({ name: "plantora", version: "1.0.0", status: "ok" });
-});
 
 async function startServer() {
   const useHttp = process.env.USE_HTTP === "true" || process.env.USE_HTTP === "1";
 
   if (useHttp) {
-    const httpServer = http.createServer(app);
-    httpServer.listen(PORT, () => {
-      console.log(`Plantora MCP HTTP server listening on http://localhost:${PORT}`);
+    const httpServer = http.createServer(requestListener);
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`Plantora MCP HTTP server listening on http://0.0.0.0:${PORT}`);
       console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
     });
   } else {
@@ -313,9 +491,9 @@ async function startServer() {
       process.exit(1);
     }
 
-    const httpsServer = https.createServer({ key, cert }, app);
-    httpsServer.listen(PORT, () => {
-      console.log(`Plantora MCP HTTPS server listening on https://localhost:${PORT}`);
+    const httpsServer = https.createServer({ key, cert }, requestListener);
+    httpsServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`Plantora MCP HTTPS server listening on https://0.0.0.0:${PORT}`);
       console.log(`MCP endpoint: https://localhost:${PORT}/mcp`);
     });
   }

@@ -51,5 +51,6 @@ export function validateAnswers(answers) {
     valid: true,
     message:
       "All answers recorded. You can now call `show_results` to see your flower match!",
+    answers,
   };
 }

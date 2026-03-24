@@ -36,68 +36,34 @@
 <body class="bg-background-light dark:bg-background-dark font-display">
   <div
     class="relative mx-auto flex h-auto min-h-screen max-w-md w-full flex-col bg-emerald-50 dark:bg-stone-950 overflow-x-hidden">
-    <!-- Header -->
-    <div class="flex items-center p-4 pb-2 justify-between">
-      <div id="backBtn"
-        class="text-emerald-900 dark:text-emerald-100 flex size-12 shrink-0 items-center justify-center cursor-pointer opacity-50 pointer-events-none transition-opacity">
-        <span class="material-symbols-outlined">arrow_back</span>
-      </div>
-      <h2
-        class="text-emerald-900 dark:text-emerald-50 text-xl font-bold leading-tight tracking-tight flex-1 text-center pr-12">
-        Plantora
-      </h2>
-    </div>
-
     <!-- Main Quiz Container (Hidden initially) -->
-    <div id="quizContainer" style="display: none; flex-direction: column; flex: 1;">
-      <!-- Progress Section -->
-      <div class="flex flex-col gap-3 p-4">
-        <div class="flex gap-6 justify-between items-end">
-          <p id="progressText"
-            class="text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase tracking-widest">Question 1 of 4
-          </p>
-          <p id="progressPercent" class="text-emerald-600 dark:text-emerald-400 text-sm font-semibold">25%</p>
+    <div id="quizContainer" style="display: none; flex-direction: column; flex: 1; justify-content: center; padding: 20px;">
+      
+      <!-- Minimal Card -->
+      <div class="bg-white dark:bg-stone-900 rounded-3xl shadow-xl border border-emerald-100 dark:border-emerald-900/30 overflow-hidden flex flex-col p-8">
+        
+        <!-- Question Section -->
+        <div class="mb-8">
+          <h3 id="questionText" class="text-emerald-950 dark:text-white text-2xl font-extrabold leading-tight text-center">
+            Loading...
+          </h3>
         </div>
-        <div class="rounded-full bg-emerald-200 dark:bg-emerald-900/40 h-3 overflow-hidden">
-          <div id="progressFill"
-            class="h-full rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-300"
-            style="width: 25%;"></div>
+
+        <!-- Options List -->
+        <div id="optionsContainer" class="flex flex-col gap-3">
+          <!-- Options injected here via JS -->
         </div>
-      </div>
 
-      <!-- Question Section -->
-      <div class="px-6 pt-6 pb-4 flex flex-col items-center text-center">
-        <div class="mb-4 text-6xl">🌻</div>
-        <h3 id="questionText" class="text-emerald-950 dark:text-white text-2xl font-extrabold leading-tight">
-          Loading question...
-        </h3>
-      </div>
-
-      <!-- Hero Illustration -->
-      <div class="@container px-4 py-2">
-        <div
-          class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-3xl min-h-[180px] shadow-lg border-4 border-white dark:border-emerald-900"
-          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANuKYZqDdx53wCB0nE1Yi_ISxyNpK1uRzfZquETCqrn--PdZLoWeOft2Q9U5IQkLT26NP-ejRiqgiCHLQrfAs7hnisSpDz-FnpwvNFEpuRF-A5UUd_d7M-v2_XmKvzs3KbkA7OS6zN6pqwW1c_RBjHJ4VqiGe-eUHvgmKeH3v-MAlShKVLwPADdGND4uTheBnNRU3s-nOx6QbtwOexWYiTAS5s_cPHqv3ZMcb3fVTXlcWolGkq4eIglq_CTTrntAZGS2FMPt29vko");'>
+        <!-- Hidden / Contextual Action -->
+        <div id="footerAction" class="mt-8" style="display: none;">
+          <button id="continueBtn"
+            class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all">
+            <span id="continueText">Reveal My Match</span>
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
         </div>
-      </div>
-
-      <!-- Options List -->
-      <div id="optionsContainer" class="flex flex-col gap-4 p-6">
-        <!-- Options injected here via JS -->
-      </div>
-
-      <!-- Footer Action -->
-      <div class="mt-auto p-6 pb-10">
-        <button id="continueBtn" disabled
-          class="w-full bg-primary hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all">
-          <span id="continueText">Continue</span>
-          <span class="material-symbols-outlined">arrow_forward</span>
-        </button>
-        <p id="status" class="text-center text-red-500 text-xs mt-2 font-medium"></p>
-        <p
-          class="text-center text-emerald-600/60 dark:text-emerald-400/40 text-xs mt-4 font-medium uppercase tracking-tighter">
-          Your plant soul is waiting to be found
-        </p>
+        
+        <p id="status" class="text-center text-red-500 text-xs mt-4 font-medium h-4"></p>
       </div>
     </div>
 
@@ -113,169 +79,188 @@
         const loadingState = document.getElementById('loadingState');
         const questionTextEl = document.getElementById('questionText');
         const optionsContainer = document.getElementById('optionsContainer');
+        const footerAction = document.getElementById('footerAction');
         const continueBtn = document.getElementById('continueBtn');
         const continueText = document.getElementById('continueText');
         const statusEl = document.getElementById('status');
-        const progressText = document.getElementById('progressText');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressFill = document.getElementById('progressFill');
-        const backBtn = document.getElementById('backBtn');
 
         let questions = [];
         let answers = {};
-        let currentIndex = 0;
+        let currentCount = 0;
+        let totalCount = 10;
+        let isComplete = false;
+
+        function saveState() {
+          if (window.openai?.setWidgetState) {
+            window.openai.setWidgetState({
+              questions,
+              answers,
+              currentCount,
+              totalCount,
+              isComplete
+            });
+          }
+        }
 
         function updateProgressUI() {
-          const total = questions.length || 1;
-          const currentNum = currentIndex + 1;
-          const pct = Math.round((currentNum / total) * 100);
-
-          progressText.textContent = `Question ${currentNum} of ${total}`;
-          progressPercent.textContent = `${pct}%`;
-          progressFill.style.width = `${pct}%`;
-
-        if (currentIndex === total - 1) {
-          continueText.textContent = 'Reveal My Match';
-        } else {
-          continueText.textContent = 'Continue';
-        }
-
-        if (currentIndex > 0) {
-          backBtn.classList.remove('opacity-50', 'pointer-events-none');
-        } else {
-          backBtn.classList.add('opacity-50', 'pointer-events-none');
-        }
-      }
-
-      function renderCurrentQuestion() {
-        if (!questions.length) return;
-        
-        const q = questions[currentIndex];
-        questionTextEl.textContent = q.text;
-
-        const selectedVal = answers[q.id];
-        continueBtn.disabled = !selectedVal;
-
-        let html = '';
-        (q.options || []).forEach(o => {
-          const isSelected = selectedVal === o.value;
-          html += `
-          <label class="option-label group relative flex items-center gap-4 rounded-2xl border-2 ${isSelected ? 'border-primary/50' : 'border-emerald-100 dark:border-emerald-900/30'} bg-white dark:bg-stone-900 p-4 shadow-sm hover:border-primary/50 transition-all cursor-pointer">
-            <input class="peer h-6 w-6 border-2 border-emerald-200 text-primary focus:ring-primary focus:ring-offset-0 checked:border-primary" name="${q.id}" type="radio" value="${o.value}" ${isSelected ? 'checked' : ''} />
-            <div class="flex grow flex-col">
-              <p class="text-emerald-900 dark:text-emerald-100 text-base font-semibold leading-normal">${o.label}</p>
-            </div>
-          </label>`;
-        });
-        optionsContainer.innerHTML = html;
-
-        // Listeners for new radio buttons
-        optionsContainer.querySelectorAll('input[type="radio"]').forEach(radio => {
-          radio.addEventListener('change', () => {
-             answers[q.id] = radio.value;
-             continueBtn.disabled = false;
-             
-             // Visual updates for selected option
-             optionsContainer.querySelectorAll('.option-label').forEach(lbl => {
-               lbl.classList.remove('border-primary/50');
-               lbl.classList.add('border-emerald-100', 'dark:border-emerald-900/30');
-             });
-             radio.closest('.option-label').classList.remove('border-emerald-100', 'dark:border-emerald-900/30');
-             radio.closest('.option-label').classList.add('border-primary/50');
-          });
-        });
-
-        updateProgressUI();
-      }
-
-      backBtn.onclick = () => {
-        if (currentIndex > 0) {
-          currentIndex--;
-          renderCurrentQuestion();
-        }
-      };
-
-      continueBtn.onclick = () => {
-        const q = questions[currentIndex];
-        if (!answers[q.id]) {
-          statusEl.textContent = 'Please select an option.';
-          return;
-        }
-        statusEl.textContent = '';
-
-        if (currentIndex < questions.length - 1) {
-          // Go to next question
-          currentIndex++;
-          renderCurrentQuestion();
-        } else {
-          // Final Submit
-          continueBtn.disabled = true;
-          continueText.innerHTML = '<span style="animation: pulse 1s infinite;">Planting seeds...</span>';
-          callTool('submit_answers', { answers: { ...answers } });
-        }
-      };
-
-      function render(data) {
-        let incomingQuestions = [];
-        if (Array.isArray(data)) {
-          incomingQuestions = data;
-        } else if (data?.questions && Array.isArray(data.questions)) {
-          incomingQuestions = data.questions;
-        }
-
-        if (!incomingQuestions.length) return;
-        
-        loadingState.style.display = 'none';
-        quizContainer.style.display = 'flex';
-        
-        // Initialize if empty
-        if (questions.length === 0) {
-          questions = incomingQuestions;
-          answers = {};
-          currentIndex = 0;
-          renderCurrentQuestion();
-        }
-      }
-
-      function callTool(name, args) {
-        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-        window.parent.postMessage({
-          jsonrpc: '2.0',
-          id,
-          method: 'tools/call',
-          params: { name, arguments: args || {} }
-        }, '*');
-      }
-
-      window.addEventListener('message', (event) => {
-        if (event.source !== window.parent) return;
-        const msg = event.data;
-        if (!msg || msg.jsonrpc !== '2.0') return;
-        
-        if (msg.method === 'ui/notifications/tool-result') {
-          const data = msg.params?.structuredContent;
-          if (data?.questions || Array.isArray(data)) {
-            render(data);
+          if (isComplete) {
+            footerAction.style.display = 'block';
+            continueText.textContent = 'Reveal My Match';
+          } else {
+            footerAction.style.display = 'none';
           }
-          if (data?.success !== undefined) {
-            if (data.success) {
-              continueText.textContent = 'Growing your flower...';
-              setTimeout(() => {
-                callTool('show_results', { answers: data.answers });
-              }, 600);
-            } else {
-              statusEl.textContent = data.message || 'Error saving answers.';
-              continueBtn.disabled = false;
-              continueText.textContent = 'Reveal My Match';
+        }
+
+        // Optimized height notification using ResizeObserver
+        if (window.openai?.notifyIntrinsicHeight) {
+          const observer = new ResizeObserver(() => {
+            window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+          });
+          observer.observe(document.body);
+        }
+
+        function renderCurrentQuestion() {
+          if (!questions.length) return;
+          
+          const q = questions[0];
+          questionTextEl.textContent = q.text;
+
+          const selectedVal = answers[q.id];
+          continueBtn.disabled = !selectedVal;
+
+          let html = '';
+          (q.options || []).forEach(o => {
+            const isSelected = selectedVal === o.value;
+            html += `
+            <label class="option-label group relative flex items-center gap-4 rounded-2xl border-2 ${isSelected ? 'border-primary/50' : 'border-emerald-100 dark:border-emerald-900/30'} bg-white dark:bg-stone-900 p-5 shadow-sm hover:border-primary/50 transition-all cursor-pointer">
+              <input class="peer hidden" name="${q.id}" type="radio" value="${o.value}" ${isSelected ? 'checked' : ''} />
+              <div class="flex grow flex-col">
+                <p class="text-emerald-900 dark:text-emerald-100 text-lg font-semibold leading-normal text-center">${o.label}</p>
+              </div>
+            </label>`;
+          });
+          optionsContainer.innerHTML = html;
+
+          // Listeners for auto-submission
+          optionsContainer.querySelectorAll('.option-label').forEach(label => {
+            label.onclick = () => {
+               const radio = label.querySelector('input');
+               radio.checked = true;
+               answers[q.id] = radio.value;
+               
+               // Visual feedback
+               optionsContainer.querySelectorAll('.option-label').forEach(lbl => {
+                 lbl.classList.remove('border-primary/50');
+                 lbl.classList.add('border-emerald-100', 'dark:border-emerald-900/30');
+               });
+               label.classList.remove('border-emerald-100', 'dark:border-emerald-900/30');
+               label.classList.add('border-primary/50');
+               
+               saveState();
+               
+               // Auto-submit after delay
+               setTimeout(submitAnswer, 300);
+            };
+          });
+
+          updateProgressUI();
+        }
+
+        function submitAnswer() {
+          if (isComplete) return;
+          const q = questions[0];
+          if (!answers[q.id]) return;
+
+          statusEl.textContent = '';
+          loadingState.style.display = 'flex';
+          loadingState.innerHTML = '<div style="text-align:center; padding: 40px; color:#10b981; font-weight:bold; animation:pulse 1s infinite;">Growing the next question...</div>';
+          quizContainer.style.display = 'none';
+          
+          const currentAnswer = {};
+          currentAnswer[q.id] = answers[q.id];
+          callTool('submit_answers', { answers: currentAnswer });
+        }
+
+        continueBtn.onclick = () => {
+          if (isComplete) {
+            continueBtn.disabled = true;
+            continueText.innerHTML = '<span style="animation: pulse 1s infinite;">Blooming your match...</span>';
+            callTool('show_results', {});
+            return;
+          }
+          submitAnswer();
+        };
+
+        function render(data) {
+          if (!data) return;
+          const content = data.structuredContent || data;
+          
+          if (content.questions || content.nextQuestion) {
+            questions = content.nextQuestion ? [content.nextQuestion] : (content.questions || []);
+            currentCount = content.currentCount || currentCount;
+            totalCount = content.totalCount || totalCount;
+            isComplete = content.isComplete || false;
+
+            loadingState.style.display = 'none';
+            quizContainer.style.display = 'flex';
+            
+            renderCurrentQuestion();
+            saveState();
+          } else if (content.isComplete) {
+            isComplete = true;
+            currentCount = content.currentCount || totalCount;
+            updateProgressUI();
+            saveState();
+          }
+          
+          continueBtn.disabled = false;
+        }
+
+        function callTool(name, args) {
+          if (window.openai?.callTool) {
+            window.openai.callTool(name, args);
+          } else {
+            const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+            window.parent.postMessage({
+              jsonrpc: '2.0',
+              id,
+              method: 'tools/call',
+              params: { name, arguments: args || {} }
+            }, '*');
+          }
+        }
+
+        window.addEventListener('message', (event) => {
+          if (event.source !== window.parent) return;
+          const msg = event.data;
+          if (!msg || msg.jsonrpc !== '2.0') return;
+          
+          if (msg.method === 'ui/notifications/tool-result') {
+            const data = msg.params?.structuredContent || msg.params;
+            if (data?.questions || Array.isArray(data) || Array.isArray(data?.structuredContent)) {
+              render(data);
             }
           }
-        }
-      }, { passive: true });
+        }, { passive: true });
 
-      let d = window.openai?.toolOutput?.structuredContent;
-      if (d && (d?.questions || Array.isArray(d))) {
-        render(d);
-      }
+        // Restore state or initialize from toolOutput
+        const state = window.openai?.widgetState;
+        if (state && state.questions && state.questions.length > 0) {
+          questions = state.questions;
+          answers = state.answers || {};
+          currentCount = state.currentCount || 0;
+          totalCount = state.totalCount || 10;
+          isComplete = state.isComplete || false;
+          
+          loadingState.style.display = 'none';
+          quizContainer.style.display = 'flex';
+          renderCurrentQuestion();
+        } else {
+          let d = window.openai?.toolOutput;
+          if (d) {
+            render(d);
+          }
+        }
     })();
   </script>
 </body>

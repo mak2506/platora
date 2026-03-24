@@ -126,23 +126,35 @@
 
     function render(data) {
       if (!data) return;
-      const msg = data.message || 'Welcome to Plantora! Answer a few simple questions to discover your true inner flower.';
+      // Handle both structuredContent or direct data
+      const content = data.structuredContent || data;
+      const msg = content.message || 'Welcome to Plantora! Answer a few simple questions to discover your true inner flower.';
       messageEl.textContent = msg.replace(/\*\*/g, '').replace(/`/g, '');
       
       // Hide loading bar and show button
       loadingContainer.style.display = 'none';
       startBtn.style.display = 'inline-block';
       startBtn.style.animation = 'fadeInUp 0.5s 0.2s both';
+      
+      // Notify host of height change
+      if (window.openai?.notifyIntrinsicHeight) {
+        window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+      }
     }
 
     function callTool(name, args) {
-      const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-      window.parent.postMessage({
-        jsonrpc: '2.0',
-        id,
-        method: 'tools/call',
-        params: { name, arguments: args || {} }
-      }, '*');
+      if (window.openai?.callTool) {
+        window.openai.callTool(name, args);
+      } else {
+        // Fallback for non-SDK environments
+        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        window.parent.postMessage({
+          jsonrpc: '2.0',
+          id,
+          method: 'tools/call',
+          params: { name, arguments: args || {} }
+        }, '*');
+      }
     }
 
     startBtn.onclick = () => {
@@ -157,14 +169,24 @@
       const msg = event.data;
       if (!msg || msg.jsonrpc !== '2.0') return;
       if (msg.method === 'ui/notifications/tool-result') {
-        const data = msg.params?.structuredContent;
+        const data = msg.params?.structuredContent || msg.params;
         render(data);
         startBtn.disabled = false;
         startBtn.textContent = 'Start journey';
       }
     }, { passive: true });
 
-    if (window.openai?.toolOutput) render(window.openai.toolOutput);
+    // Initial render and height notification
+    if (window.openai?.toolOutput) {
+      render(window.openai.toolOutput);
+    } else {
+      // Small delay for initial height notification if no data
+      setTimeout(() => {
+        if (window.openai?.notifyIntrinsicHeight) {
+          window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+        }
+      }, 500);
+    }
   })();
 </script>
 </body>

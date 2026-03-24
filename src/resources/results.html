@@ -358,9 +358,18 @@
           return 'theme-rose'; // fallback
         }
 
+        // Optimized height notification using ResizeObserver
+        if (window.openai?.notifyIntrinsicHeight) {
+          const observer = new ResizeObserver(() => {
+            window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+          });
+          observer.observe(document.body);
+        }
+
         function render(data) {
           if (!data) return;
-          const f = data.flower;
+          const content = data.structuredContent || data;
+          const f = content.flower;
           if (!f) {
             nameEl.textContent = 'A Mystery';
             descEl.textContent = 'Oops! We could not fully bloom your results. Please try again.';
@@ -382,12 +391,24 @@
         }
 
         function callTool(name, args) {
-          window.parent.postMessage({
-            jsonrpc: '2.0',
-            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
-            method: 'tools/call',
-            params: { name, arguments: args || {} }
-          }, '*');
+          if (window.openai?.callTool) {
+            window.openai.callTool(name, args);
+          } else {
+            window.parent.postMessage({
+              jsonrpc: '2.0',
+              id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
+              method: 'tools/call',
+              params: { name, arguments: args || {} }
+            }, '*');
+          }
+        }
+
+        function syncTheme() {
+          if (window.openai?.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (window.openai?.theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          }
         }
 
         endBtn.onclick = () => {
@@ -403,17 +424,15 @@
           const msg = event.data;
           if (!msg || msg.jsonrpc !== '2.0') return;
           if (msg.method === 'ui/notifications/tool-result') {
-            render(msg.params?.structuredContent);
+            const data = msg.params?.structuredContent || msg.params;
+            render(data);
           }
         }, { passive: true });
 
-        if (window.openai && window.openai.toolOutput) {
-          let externalData = { "flower": { "id": "rose", "name": "Rose", "description": "You are passionate, expressive, and bold. Like the rose, you're not afraid to stand out and make a statement. You bring energy and enthusiasm to everything you do, and people are drawn to your confident presence." }, "answers": { "q1": "c", "q2": "b", "q3": "b", "q4": "c" } };
-          // If there's real tool output structured content, use it.
-          if (window.openai.toolOutput.structuredContent) {
-            externalData = window.openai.toolOutput.structuredContent;
-          }
-          render(externalData);
+        // Initial setup
+        syncTheme();
+        if (window.openai?.toolOutput) {
+          render(window.openai.toolOutput);
         }
       })();
   </script>
