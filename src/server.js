@@ -307,6 +307,8 @@ function createMcpServer(getSessionId) {
       },
       _meta: {
         ui: { resourceUri: RESULTS_URI },
+        "openai/outputTemplate": RESULTS_URI,
+        "openai/toolInvocation/invoking": "Blooming your flower...",
         "openai/invoked": "Match revealed",
         "openai/widgetDescription": "The quiz is complete, and the personalized flower match result is currently blooming in the widget with a detailed description."
       },
@@ -332,13 +334,19 @@ function createMcpServer(getSessionId) {
       
       Available Flowers: ${JSON.stringify(flowersData.flowers)}
       
-      Choose exactly ONE flower. Explain why it matches their personality.
-      Return your response as a JSON object:
+      Choose exactly ONE flower. 
+      Return your response as a JSON object with these EXACT fields:
       {
         "flower": {
           "id": "flower_id",
           "name": "Flower Name",
-          "description": "Personalized description of why this flower matches the user based on their specific answers."
+          "quote": "A poetic, one-sentence quote about the user's match (e.g. 'Like a drop of liquid sunshine...')",
+          "traits": [
+            { "label": "NATURALLY RADIANT", "icon": "sun" },
+            { "label": "FULL OF LIFE", "icon": "leaf" }
+          ],
+          "meaning": "A symbol of passion and creativity. You bring optimism to everyone around you!",
+          "description": "A more detailed biography (1-2 paragraphs) for the AI chat history."
         }
       }`;
 
