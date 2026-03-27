@@ -328,25 +328,28 @@ function createMcpServer(getSessionId) {
 
       console.log(`[Tool: show_results] Analyzing history: ${questionHistory}`);
 
-      const prompt = `Analyze this user's personality based on their answers to a 10-question flower quiz and identify which flower from the provided list matches them best.
+      const prompt = `Analyze this user's personality based on their EXACT answers to a 10-question flower quiz and identify which flower from the provided list matches them best.
       
       User Answers: ${questionHistory}
       
       Available Flowers: ${JSON.stringify(flowersData.flowers)}
       
-      Choose exactly ONE flower. 
-      Return your response as a JSON object with these EXACT fields:
+      CRITICAL INSTRUCTIONS:
+      1. Choose exactly ONE flower that best reflects the nuances of their choices.
+      2. Do NOT default to generic or common matches like 'Sunflower' unless the answers explicitly point to high social energy and optimism.
+      3. Be highly sensitive to the balance of traits (e.g. introversion, resilience, creativity).
+      4. Return your response as a JSON object with these EXACT fields:
       {
         "flower": {
           "id": "flower_id",
           "name": "Flower Name",
-          "quote": "A poetic, one-sentence quote about the user's match (e.g. 'Like a drop of liquid sunshine...')",
+          "quote": "A poetic, one-sentence quote about the user's match.",
           "traits": [
             { "label": "NATURALLY RADIANT", "icon": "sun" },
             { "label": "FULL OF LIFE", "icon": "leaf" }
           ],
-          "meaning": "A symbol of passion and creativity. You bring optimism to everyone around you!",
-          "description": "A more detailed biography (1-2 paragraphs) for the AI chat history."
+          "meaning": "A symbol of [quality]. [One-sentence insight].",
+          "description": "A more detailed biography (1-2 paragraphs) explaining the deep connection between their answers and this flower's essence."
         }
       }`;
 
@@ -356,7 +359,7 @@ function createMcpServer(getSessionId) {
           prompt,
           system: "You are a professional personality psychologist and botanist who only outputs JSON. Be concise but deep in your descriptions.",
           model: "llama-3.3-70b-versatile",
-          temperature: 0.3 // Lower temperature for more consistent JSON results
+          temperature: 0.7 // Increased temperature for better variety in personality matches
         });
 
         console.log(`[Tool: show_results] LLM raw response: ${responseText}`);
@@ -414,6 +417,39 @@ function createMcpServer(getSessionId) {
     async () => ({
       content: [{ type: "text", text: END_RESPONSE }],
     })
+  );
+
+  mcpServer.registerTool(
+    "get_quiz_state",
+    {
+      sessionId: z.string().describe("Current user session ID"),
+    },
+    async ({ sessionId }) => {
+      const session = getSession(sessionId);
+      if (!session || !session.questions || session.questions.length === 0) {
+        return {
+          content: [{ type: "text", text: "Session or quiz data not found." }],
+          structuredContent: { success: false, message: "Session not found" }
+        };
+      }
+      const q = session.questions[session.questions.length - 1];
+      const count = session.questions.length;
+
+      return {
+        content: [{ type: "text", text: `Current Question: ${q.question || q.text}` }],
+        structuredContent: {
+          sessionId,
+          currentCount: count,
+          totalCount: 10,
+          question: q,
+          isComplete: (session.progress === 'ready_for_results' || session.progress === 'complete')
+        },
+        _meta: {
+          "openai/invoked": "State recovered",
+          "openai/widgetDescription": "Recovering the current state of the quiz for the user."
+        }
+      };
+    }
   );
 
   return mcpServer;

@@ -32,7 +32,9 @@
   </script>
   <style>
     body {
-      min-height: max(884px, 100dvh);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .progress-bar-fill {
@@ -75,51 +77,54 @@
   </style>
 </head>
 
-<body class="text-stone-900 font-sans">
-  <div class="relative flex min-h-screen w-full flex-col bg-stone-50 overflow-x-hidden">
+<body class="bg-yellow-400 text-stone-950 font-sans transition-colors duration-300">
+  <div class="relative flex min-h-screen w-full flex-col dark:bg-stone-950 overflow-x-hidden transition-colors">
 
-    <!-- Top Header -->
-    <header class="pt-8 pb-4 text-center">
-      <h1 class="font-serif text-3xl font-black text-botanical tracking-tight">Plantora Quiz</h1>
-    </header>
 
     <!-- Progress Section -->
     <div class="px-8 mb-6">
       <div class="flex justify-between items-end mb-2">
-        <span id="questionCounter" class="text-[10px] font-bold text-botanical/60 uppercase tracking-widest">Question 1
+        <span id="questionCounter"
+          class="text-[10px] font-black text-stone-900/60 dark:text-yellow-400/60 uppercase tracking-widest">Question 1
           of 10</span>
-        <span id="percentLabel" class="text-[10px] font-bold text-green-700 uppercase tracking-widest">0%
+        <span id="percentLabel"
+          class="text-[10px] font-black text-stone-950 dark:text-yellow-400 uppercase tracking-widest">0%
           Complete</span>
       </div>
-      <div class="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
-        <div id="progressBar" class="progress-bar-fill h-full bg-green-500" style="width: 0%"></div>
+      <div class="w-full h-2 bg-stone-900/10 dark:bg-yellow-400/10 rounded-full overflow-hidden">
+        <div id="progressBar" class="progress-bar-fill h-full bg-stone-950 dark:bg-yellow-400" style="width: 0%"></div>
       </div>
     </div>
 
     <!-- Main Content -->
     <main id="quizContent" class="flex-1 px-4 pb-12 flex flex-col">
 
+      <!-- Decorative Header Image -->
+      <div class="px-4 mb-4">
+        <div class="w-full h-32 overflow-hidden rounded-2xl flex items-center justify-center">
+          <img src="https://zjfltpggvcwomlwfcgci.supabase.co/storage/v1/object/public/assests/sunflower.png"
+            alt="Botanical Background" class="max-w-full max-h-full object-contain">
+        </div>
+      </div>
+
       <!-- Loading State -->
-      <div id="loadingState" class="flex-1 flex flex-col items-center justify-center py-20">
-        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-4 text-stone-400 font-medium tracking-wide">Growing your next question...</p>
+      <div id="loadingState"
+        class="flex-1 flex flex-col items-center justify-center py-20 text-stone-950 dark:text-yellow-400">
+        <div
+          class="w-12 h-12 border-4 border-stone-950 dark:border-yellow-400 border-t-transparent rounded-full animate-spin">
+        </div>
+        <p class="mt-4 font-bold tracking-wide">Growing your next question...</p>
       </div>
 
       <!-- Question Card -->
       <div id="questionCard" style="display: none;"
-        class="bg-sage/30 rounded-[32px] p-6 shadow-sm border border-sage flex-1 flex flex-col">
+        class="bg-white/95 dark:bg-stone-900/90 rounded-[40px] p-8 shadow-2xl border border-stone-200 dark:border-stone-800 flex-1 flex flex-col transition-colors">
 
-        <!-- Illustration Area -->
-        <div
-          class="w-full bg-white rounded-2xl h-48 mb-6 overflow-hidden flex items-center justify-center border border-sage shadow-inner">
-          <img src="https://images.unsplash.com/photo-1599839619722-39751411883e?auto=format&fit=crop&w=600&h=400&q=80"
-            alt="Plant Illustration" class="w-full h-full object-cover opacity-80" />
-        </div>
-
-        <div class="flex flex-col flex-1">
-          <span id="traitLabel" class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">SOCIAL
+        <div class="flex flex-col flex-1 text-stone-950 dark:text-white">
+          <span id="traitLabel"
+            class="text-[10px] font-black text-stone-400 dark:text-stone-500 uppercase tracking-[0.3em] mb-3">SOCIAL
             STYLE</span>
-          <h2 id="questionText" class="text-2xl font-black text-botanical leading-[1.2] mb-8">
+          <h2 id="questionText" class="text-3xl font-black leading-[1.1] mb-10 tracking-tight">
             When you walk into a room full of strangers, what's your first instinct?
           </h2>
 
@@ -130,20 +135,33 @@
 
           <!-- Submit Button -->
           <button id="submitBtn" disabled
-            class="mt-auto w-full py-5 bg-gradient-to-r from-orange-500 to-primary text-white font-black text-lg rounded-2xl shadow-xl shadow-primary/20 disabled:opacity-50 disabled:grayscale disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+            class="mt-auto w-full py-6 bg-stone-950 text-yellow-400 font-black text-xl rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 dark:bg-yellow-400 dark:text-stone-950 mb-4">
             <span id="submitLabel">Submit Answer</span>
             <span class="material-symbols-outlined">arrow_forward</span>
           </button>
         </div>
 
+        <!-- Completion State -->
+        <div id="completionState" style="display: none;"
+          class="flex-1 flex flex-col items-center justify-center py-12 text-center animate-fade-in">
+          <div class="mb-6 w-20 h-20 bg-emerald-100 dark:bg-emerald-950/30 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <span class="material-symbols-outlined text-5xl">check_circle</span>
+          </div>
+          <h2 class="text-4xl font-serif font-black text-stone-800 dark:text-white mb-4">Journey Complete!</h2>
+          <p class="text-stone-600 dark:text-stone-400 text-xl mb-10 leading-relaxed max-w-sm mx-auto">
+            Your botanical essence has been distilled... 🌸<br>
+          </p>
+          
+          <div class="bg-stone-950 dark:bg-yellow-400 text-yellow-400 dark:text-stone-950 px-8 py-4 rounded-2xl font-black text-lg tracking-widest animate-pulse flex items-center gap-3">
+             <span class="material-symbols-outlined">arrow_downward</span>
+             SCROLL DOWN FOR RESULTS
+             <span class="material-symbols-outlined">arrow_downward</span>
+          </div>
+        </div>
+
       </div>
     </main>
 
-    <!-- Sticky Footer Decoration -->
-    <footer class="py-6 text-center">
-      <span class="text-[9px] font-bold text-stone-300 uppercase tracking-[0.3em]">Part of the Botanical Personality
-        Suite</span>
-    </footer>
 
   </div>
 
@@ -175,10 +193,14 @@
         let currentCount = 0;
         let totalCount = 10;
         let isComplete = false;
-        let sessionId = null;
+        // Try to recover sessionId from storage or URL as first-line fallback
+        const urlParams = new URLSearchParams(window.location.search);
+        let sessionId = urlParams.get('sessionId') || localStorage.getItem('plantora_session_id') || null;
+
         let selectedOption = null;
 
         function saveState() {
+          if (sessionId) localStorage.setItem('plantora_session_id', sessionId);
           if (window.openai?.setWidgetState) {
             window.openai.setWidgetState({
               questions,
@@ -214,7 +236,7 @@
           if (!questions.length) return;
           const q = questions[0];
 
-          questionTextEl.textContent = q.text;
+          questionTextEl.textContent = q.question || q.text || "";
           selectedOption = answers[q.id] || null;
           submitBtn.disabled = !selectedOption;
 
@@ -222,14 +244,18 @@
           (q.options || []).forEach(o => {
             const isSelected = selectedOption === o.value;
             const label = document.createElement('label');
-            label.className = `option-card relative flex items-center gap-4 rounded-2xl border-2 ${isSelected ? 'border-primary bg-white shadow-md' : 'border-stone-100 bg-white/50'} p-5 cursor-pointer hover:border-primary/30 transition-all`;
+            label.className = `option-card relative flex items-center gap-4 rounded-3xl border-2 transition-all p-5 cursor-pointer 
+              ${isSelected ? 'border-stone-950 bg-stone-950 text-yellow-400 dark:border-yellow-400 dark:bg-yellow-400 dark:text-stone-900 shadow-xl scale-[1.02]'
+                : 'border-stone-200 bg-white/50 dark:bg-stone-800/50 dark:border-stone-700 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'}`;
 
             label.innerHTML = `
             <input class="peer hidden" type="radio" name="options" value="${o.value}" ${isSelected ? 'checked' : ''} />
             <div class="flex-1">
-              <p class="text-stone-800 font-bold text-sm leading-tight">${o.label}</p>
+              <p class="font-bold text-sm leading-tight">${o.label}</p>
             </div>
-            <div class="radio-circle"></div>
+            <div class="radio-circle border-stone-300 dark:border-stone-600 ${isSelected ? 'border-yellow-400 dark:border-stone-950' : ''}">
+               <div class="absolute inset-1 rounded-full ${isSelected ? 'bg-yellow-400 dark:bg-stone-950' : ''}"></div>
+            </div>
           `;
 
             label.onclick = () => {
@@ -263,6 +289,18 @@
             submitBtn.disabled = true;
             submitLabel.textContent = "Blooming...";
             console.log("[UI] Calling show_results");
+
+            // Wait a moment for UX, then show completion message
+            setTimeout(() => {
+              loadingState.style.display = 'none';
+              questionCard.style.display = 'none';
+              document.getElementById('completionState').style.display = 'flex';
+
+              if (window.openai?.notifyIntrinsicHeight) {
+                window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+              }
+            }, 800);
+
             callTool('show_results', { sessionId: sessionId || undefined });
             return;
           }
@@ -283,17 +321,31 @@
 
         function render(data) {
           if (!data) return;
-          console.log("Rendering with data:", JSON.stringify(data).substring(0, 100) + "...");
+          console.log("[Quiz] Render data:", JSON.stringify(data).substring(0, 100) + "...");
           const content = data.structuredContent || data;
 
-          if (content.sessionId) sessionId = content.sessionId;
-          if (content.trait) traitLabel.textContent = content.trait;
+          if (content.sessionId) {
+            sessionId = content.sessionId;
+            localStorage.setItem('plantora_session_id', sessionId);
+          }
 
-          if (content.questions || content.nextQuestion) {
-            questions = content.nextQuestion ? [content.nextQuestion] : (content.questions || []);
-            currentCount = content.currentCount || currentCount;
-            totalCount = content.totalCount || totalCount;
-            isComplete = content.isComplete || false;
+          // Inclusive check for any form of question data
+          const incomingQuestion = content.question || content.nextQuestion || (content.questions && content.questions[0]);
+
+          if (incomingQuestion) {
+            questions = [incomingQuestion];
+
+            // Normalize counts
+            if (content.currentQuestion !== undefined) {
+              currentCount = content.currentQuestion + 1;
+            } else if (content.currentCount !== undefined) {
+              currentCount = content.currentCount;
+            } else if (!currentCount) {
+              currentCount = 1;
+            }
+
+            totalCount = content.totalQuestions || content.totalCount || 10;
+            isComplete = !!content.isComplete;
 
             loadingState.style.display = 'none';
             questionCard.style.display = 'flex';
@@ -308,39 +360,37 @@
             renderCurrentQuestion();
             saveState();
             syncRichContext();
-          } else if (content.isComplete) {
-            isComplete = true;
-            currentCount = totalCount;
-            submitLabel.textContent = "Reveal My Match";
-            submitBtn.disabled = false;
-            updateProgress();
-            saveState();
-            syncRichContext();
+          }
+
+          if (window.openai?.notifyIntrinsicHeight) {
+            setTimeout(() => {
+              window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+            }, 100);
           }
         }
 
         async function callTool(name, args) {
           if (sessionId && !args.sessionId) args.sessionId = sessionId;
           console.log(`[Quiz SDK] callTool('${name}') with args:`, args);
-          
+
           try {
             if (window.openai?.callTool) {
               const response = await window.openai.callTool(name, args);
               console.log("[SDK] Received tool response:", response);
-              
+
               // 3. SEND FOLLOW-UP MESSAGE for interactivity
               if (window.openai?.sendFollowUpMessage) {
-                 if (name === 'submit_answers') {
-                   window.openai.sendFollowUpMessage({ prompt: "I've submitted my answer! What's next?" });
-                 } else if (name === 'show_results') {
-                   window.openai.sendFollowUpMessage({ prompt: "Reveal my botanical match!" });
-                 }
+                if (name === 'submit_answers') {
+                  window.openai.sendFollowUpMessage({ prompt: "I've submitted my answer! What's next?" });
+                } else if (name === 'show_results') {
+                  window.openai.sendFollowUpMessage({ prompt: "Reveal my botanical match!" });
+                }
               }
 
               if (response && response.structuredContent) {
-                 render(response.structuredContent);
+                render(response.structuredContent);
               } else if (response) {
-                 render(response);
+                render(response);
               }
             } else {
               console.log("[SDK] Fallback to postMessage tools/call");
@@ -362,32 +412,39 @@
         }
 
         // 2. MULTI-LAYERED INITIALIZATION
-        function initApp() {
+        async function initApp() {
           console.log("[Quiz] Initiating layered sync...");
-          
+
           // Layer 1: Immediate check
           const hasData = !!(window.openai?.toolOutput || window.openai?.widgetState);
           if (hasData) {
             console.log("[Quiz] Syncing from immediate host data");
             render(window.openai.toolOutput || window.openai.widgetState);
+            return;
           }
 
-          // Layer 2: Retries (Host async init)
+          // Layer 2: Retries (Host async init) + Recovery tool
           let retries = 0;
-          const interval = setInterval(() => {
+          const interval = setInterval(async () => {
             retries++;
-            if (retries > 10) { // Give up after 2 seconds
-              clearInterval(interval);
-              return;
-            }
 
             const dataFound = !!(window.openai?.toolOutput || window.openai?.widgetState);
             const isRendered = loadingState.style.display === 'none';
 
             if (dataFound && !isRendered) {
-               console.log("[Quiz] Syncing from delayed host init...");
-               render(window.openai.toolOutput || window.openai.widgetState);
-               clearInterval(interval);
+              console.log("[Quiz] Syncing from delayed host init...");
+              render(window.openai.toolOutput || window.openai.widgetState);
+              clearInterval(interval);
+              return;
+            }
+
+            if (retries > 50) { // After 10 seconds, try manual recovery
+              clearInterval(interval);
+              if (!isRendered && sessionId) {
+                console.log("[Quiz] Manual recovery using get_quiz_state...");
+                await callTool('get_quiz_state', { sessionId });
+              }
+              return;
             }
           }, 200);
         }
@@ -401,6 +458,28 @@
 
         // Start the checks
         initApp();
+
+        // Theme Sync
+        function syncTheme() {
+          const theme = window.openai?.theme || 'light';
+          console.log("[Quiz] Syncing theme:", theme);
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+
+        // Initial sync
+        syncTheme();
+
+        // Auto-Resize
+        if (window.openai?.notifyIntrinsicHeight) {
+          const observer = new ResizeObserver(() => {
+            window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+          });
+          observer.observe(document.body);
+        }
       })();
   </script>
 </body>
