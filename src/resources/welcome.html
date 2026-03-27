@@ -125,8 +125,20 @@
         }, 300);
       }, 5000);
 
+      function syncRichContext() {
+        if (window.openai?.updateModelContext) {
+          window.openai.updateModelContext({
+            content: [{
+              type: "text",
+              text: "The user is now at the Plantora welcome screen, ready to start their botanical personality journey."
+            }]
+          });
+        }
+      }
+
       function render(data) {
         if (!data) return;
+        console.log("[Welcome] Rendering with data:", JSON.stringify(data).substring(0, 100) + "...");
         const content = data.structuredContent || data;
         if (content.message) {
           messageEl.textContent = content.message.replace(/\*\*/g, '').replace(/`/g, '');
@@ -134,27 +146,42 @@
         loadingContainer.style.display = 'none';
         startBtn.style.display = 'flex';
         
+        syncRichContext();
+
         if (window.openai?.notifyIntrinsicHeight) {
           window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
         }
       }
 
-      startBtn.onclick = () => {
-        startBtn.disabled = true;
-        startBtn.querySelector('span').textContent = 'Planting seeds...';
-        callTool('start', {});
-      };
-
-      function callTool(name, args) {
-        if (window.openai?.callTool) {
-          window.openai.callTool(name, args);
-        } else {
-          window.parent.postMessage({
-            jsonrpc: '2.0',
-            id: 'id-' + Date.now(),
-            method: 'tools/call',
-            params: { name, arguments: args || {} }
-          }, '*');
+      async function callTool(name, args) {
+        console.log(`[Welcome SDK] callTool('${name}') with args:`, args);
+        try {
+          if (window.openai?.callTool) {
+            const response = await window.openai.callTool(name, args);
+            console.log("[Welcome SDK] Received tool response:", response);
+            
+            if (name === 'start') {
+              if (window.openai?.sendFollowUpMessage) {
+                window.openai.sendFollowUpMessage({ prompt: "I'm ready! Let's start the quiz." });
+              }
+            }
+            
+            if (response && response.structuredContent) {
+              render(response.structuredContent);
+            }
+          } else {
+            console.log("[Welcome SDK] Fallback to postMessage tools/call");
+            window.parent.postMessage({
+              jsonrpc: '2.0',
+              id: 'id-' + Date.now(),
+              method: 'tools/call',
+              params: { name, arguments: args || {} }
+            }, '*');
+          }
+        } catch (err) {
+          console.error("[Welcome SDK] callTool error:", err);
+          startBtn.disabled = false;
+          startBtn.querySelector('span').textContent = 'Try Again';
         }
       }
 
@@ -162,13 +189,43 @@
         if (event.source !== window.parent) return;
         const msg = event.data;
         if (msg?.method === 'ui/notifications/tool-result') {
+          console.log("[Welcome SDK] Received Tool Result Event:", msg.params);
           render(msg.params?.structuredContent || msg.params);
         }
       });
 
-      if (window.openai?.toolOutput) {
-        render(window.openai.toolOutput);
+      // UNIFIED INITIALIZATION
+      function initApp() {
+        console.log("[Welcome] Initiating layered sync...");
+
+        // Layer 1: Immediate check
+        if (window.openai?.toolOutput) {
+          render(window.openai.toolOutput);
+        } else if (window.openai?.widgetState) {
+          render(window.openai.widgetState);
+        }
+
+        // Layer 2: Retries (Host async init)
+        let retries = 0;
+        const interval = setInterval(() => {
+          retries++;
+          if (retries > 10) { // Give up after 2 seconds
+            clearInterval(interval);
+            return;
+          }
+
+          const hasData = !!(window.openai?.toolOutput || window.openai?.widgetState);
+          const isRendered = loadingContainer.style.display === 'none';
+
+          if (hasData && !isRendered) {
+             console.log("[Welcome] Syncing from delayed host init...");
+             render(window.openai.toolOutput || window.openai.widgetState);
+             clearInterval(interval);
+          }
+        }, 200);
       }
+
+      initApp();
     })();
   </script>
 </body>

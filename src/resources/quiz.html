@@ -191,9 +191,12 @@
           }
         }
 
-        function syncModelContext() {
+        function syncRichContext() {
+          if (!questions.length) return;
+          const q = questions[0];
           const status = isComplete ? 'Questionnaire complete' : `On question ${currentCount} of 10`;
-          const msg = `Quiz Status: ${status}. Session: ${sessionId}`;
+          const msg = `Plantora Quiz Progress: ${status}. The user is currently looking at this question: "${q.text}". 
+                       Current Session ID: ${sessionId}`;
 
           if (window.openai?.updateModelContext) {
             window.openai.updateModelContext({ content: [{ type: 'text', text: msg }] });
@@ -260,7 +263,7 @@
             submitBtn.disabled = true;
             submitLabel.textContent = "Blooming...";
             console.log("[UI] Calling show_results");
-            callTool('show_results', { sessionId });
+            callTool('show_results', { sessionId: sessionId || undefined });
             return;
           }
 
@@ -275,7 +278,7 @@
           questionCard.style.display = 'none';
 
           console.log(`[UI] Submitting answer for ${q.id}: ${answers[q.id]}`);
-          callTool('submit_answers', { answers: currentAnswer, sessionId });
+          callTool('submit_answers', { answers: currentAnswer, sessionId: sessionId || undefined });
         };
 
         function render(data) {
@@ -304,7 +307,7 @@
 
             renderCurrentQuestion();
             saveState();
-            syncModelContext();
+            syncRichContext();
           } else if (content.isComplete) {
             isComplete = true;
             currentCount = totalCount;
@@ -312,53 +315,81 @@
             submitBtn.disabled = false;
             updateProgress();
             saveState();
+            syncRichContext();
           }
         }
 
-        function callTool(name, args) {
+        async function callTool(name, args) {
           if (sessionId && !args.sessionId) args.sessionId = sessionId;
-          console.log(`[SDK] callTool('${name}') with args:`, args);
-          if (window.openai?.callTool) {
-            window.openai.callTool(name, args);
-          } else {
-            console.log("[SDK] Fallback to postMessage tools/call");
-            window.parent.postMessage({
-              jsonrpc: '2.0',
-              id: 'id-' + Date.now(),
-              method: 'tools/call',
-              params: { name, arguments: args || {} }
-            }, '*');
+          console.log(`[Quiz SDK] callTool('${name}') with args:`, args);
+          
+          try {
+            if (window.openai?.callTool) {
+              const response = await window.openai.callTool(name, args);
+              console.log("[SDK] Received tool response:", response);
+              
+              // 3. SEND FOLLOW-UP MESSAGE for interactivity
+              if (window.openai?.sendFollowUpMessage) {
+                 if (name === 'submit_answers') {
+                   window.openai.sendFollowUpMessage({ prompt: "I've submitted my answer! What's next?" });
+                 } else if (name === 'show_results') {
+                   window.openai.sendFollowUpMessage({ prompt: "Reveal my botanical match!" });
+                 }
+              }
+
+              if (response && response.structuredContent) {
+                 render(response.structuredContent);
+              } else if (response) {
+                 render(response);
+              }
+            } else {
+              console.log("[SDK] Fallback to postMessage tools/call");
+              window.parent.postMessage({
+                jsonrpc: '2.0',
+                id: 'id-' + Date.now(),
+                method: 'tools/call',
+                params: { name, arguments: args || {} }
+              }, '*');
+            }
+          } catch (err) {
+            console.error("[SDK] callTool error:", err);
+            // Re-enable UI so user can retry
+            loadingState.style.display = 'none';
+            questionCard.style.display = 'flex';
+            submitBtn.disabled = false;
+            submitLabel.textContent = "Retry Submission";
           }
         }
 
         // 2. MULTI-LAYERED INITIALIZATION
-        function checkInit() {
-          console.log("Checking Initial State...");
-          console.log("window.openai:", !!window.openai);
-          console.log("toolOutput:", !!window.openai?.toolOutput);
-          console.log("widgetState:", !!window.openai?.widgetState);
-
-          const state = window.openai?.widgetState;
-          if (state && state.questions?.length > 0) {
-            console.log("Initializing from State");
-            render(state);
-            return;
+        function initApp() {
+          console.log("[Quiz] Initiating layered sync...");
+          
+          // Layer 1: Immediate check
+          const hasData = !!(window.openai?.toolOutput || window.openai?.widgetState);
+          if (hasData) {
+            console.log("[Quiz] Syncing from immediate host data");
+            render(window.openai.toolOutput || window.openai.widgetState);
           }
 
-          const out = window.openai?.toolOutput;
-          if (out) {
-            console.log("Initializing from ToolOutput");
-            render(out);
-            return;
-          }
-
-          // If still null, wait a bit or let the message listener handle it
-          setTimeout(() => {
-            if (!sessionId && !questions.length) {
-              console.log("Retry ToolOutput check...");
-              if (window.openai?.toolOutput) render(window.openai.toolOutput);
+          // Layer 2: Retries (Host async init)
+          let retries = 0;
+          const interval = setInterval(() => {
+            retries++;
+            if (retries > 10) { // Give up after 2 seconds
+              clearInterval(interval);
+              return;
             }
-          }, 1000);
+
+            const dataFound = !!(window.openai?.toolOutput || window.openai?.widgetState);
+            const isRendered = loadingState.style.display === 'none';
+
+            if (dataFound && !isRendered) {
+               console.log("[Quiz] Syncing from delayed host init...");
+               render(window.openai.toolOutput || window.openai.widgetState);
+               clearInterval(interval);
+            }
+          }, 200);
         }
 
         // Height sync
@@ -369,7 +400,7 @@
         }
 
         // Start the checks
-        checkInit();
+        initApp();
       })();
   </script>
 </body>
