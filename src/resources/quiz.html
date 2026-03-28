@@ -31,10 +31,23 @@
     }
   </script>
   <style>
+    :root {
+      --bg-aurora: linear-gradient(135deg, #ffc2e2 0%, #ffeb99 50%, #99d6ff 100%);
+      --bg-aurora-dark: linear-gradient(135deg, #831843 0%, #0c0a09 50%, #0c4a6e 100%);
+    }
+
     body {
       min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-aurora);
+      background-attachment: fixed;
+      transition: background 0.5s ease, color 0.3s ease;
       overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark body {
+      background: var(--bg-aurora-dark);
     }
 
     .progress-bar-fill {
@@ -77,8 +90,8 @@
   </style>
 </head>
 
-<body class="bg-yellow-400 text-stone-950 font-sans transition-colors duration-300">
-  <div class="relative flex min-h-screen w-full flex-col dark:bg-stone-950 overflow-x-hidden transition-colors">
+<body class="text-stone-950 font-sans transition-colors duration-300">
+  <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden transition-colors dark:text-white">
 
 
     <!-- Progress Section -->
@@ -91,8 +104,8 @@
           class="text-[10px] font-black text-stone-950 dark:text-yellow-400 uppercase tracking-widest">0%
           Complete</span>
       </div>
-      <div class="w-full h-2 bg-stone-900/10 dark:bg-yellow-400/10 rounded-full overflow-hidden">
-        <div id="progressBar" class="progress-bar-fill h-full bg-stone-950 dark:bg-yellow-400" style="width: 0%"></div>
+      <div class="w-full h-2 bg-stone-900/10 dark:bg-white/10 rounded-full overflow-hidden">
+        <div id="progressBar" class="progress-bar-fill h-full bg-stone-900 dark:bg-white" style="width: 0%"></div>
       </div>
     </div>
 
@@ -135,7 +148,7 @@
 
           <!-- Submit Button -->
           <button id="submitBtn" disabled
-            class="mt-auto w-full py-6 bg-stone-950 text-yellow-400 font-black text-xl rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 dark:bg-yellow-400 dark:text-stone-950 mb-4">
+            class="mt-auto w-full py-6 bg-stone-950 text-white font-black text-xl rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 dark:bg-white dark:text-stone-950 mb-4">
             <span id="submitLabel">Submit Answer</span>
             <span class="material-symbols-outlined">arrow_forward</span>
           </button>
@@ -152,7 +165,7 @@
             Your botanical essence has been distilled... 🌸<br>
           </p>
           
-          <div class="bg-stone-950 dark:bg-yellow-400 text-yellow-400 dark:text-stone-950 px-8 py-4 rounded-2xl font-black text-lg tracking-widest animate-pulse flex items-center gap-3">
+          <div class="bg-stone-950 dark:bg-white text-white dark:text-stone-950 px-8 py-4 rounded-full font-black text-lg tracking-widest animate-pulse flex items-center gap-3">
              <span class="material-symbols-outlined">arrow_downward</span>
              SCROLL DOWN FOR RESULTS
              <span class="material-symbols-outlined">arrow_downward</span>
@@ -245,7 +258,7 @@
             const isSelected = selectedOption === o.value;
             const label = document.createElement('label');
             label.className = `option-card relative flex items-center gap-4 rounded-3xl border-2 transition-all p-5 cursor-pointer 
-              ${isSelected ? 'border-stone-950 bg-stone-950 text-yellow-400 dark:border-yellow-400 dark:bg-yellow-400 dark:text-stone-900 shadow-xl scale-[1.02]'
+              ${isSelected ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-900 shadow-xl scale-[1.02]'
                 : 'border-stone-200 bg-white/50 dark:bg-stone-800/50 dark:border-stone-700 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'}`;
 
             label.innerHTML = `
@@ -331,6 +344,7 @@
 
           // Inclusive check for any form of question data
           const incomingQuestion = content.question || content.nextQuestion || (content.questions && content.questions[0]);
+          isComplete = !!content.isComplete;
 
           if (incomingQuestion) {
             questions = [incomingQuestion];
@@ -345,22 +359,37 @@
             }
 
             totalCount = content.totalQuestions || content.totalCount || 10;
-            isComplete = !!content.isComplete;
 
             loadingState.style.display = 'none';
             questionCard.style.display = 'flex';
-
-            if (isComplete) {
-              submitLabel.textContent = "Reveal My Match";
-              submitBtn.disabled = false;
-            } else {
-              submitLabel.textContent = "Submit Answer";
-            }
+            document.getElementById('completionState').style.display = 'none';
+            document.querySelector('#questionCard > div').style.display = 'flex';
 
             renderCurrentQuestion();
-            saveState();
-            syncRichContext();
           }
+
+          if (isComplete) {
+            loadingState.style.display = 'none';
+            questionCard.style.display = 'flex';
+            
+            submitLabel.textContent = "Reveal My Match";
+            submitBtn.disabled = false;
+
+            // If we're truly done and no new question, show the completion celebration
+            if (!incomingQuestion) {
+               document.querySelector('#questionCard > div').style.display = 'none';
+               document.getElementById('completionState').style.display = 'flex';
+               // Hide submit button as the results will be triggered
+               submitBtn.style.display = 'none';
+               
+               // Automatically call show_results to trigger host switch
+               console.log("[Quiz] Auto-triggering show_results for completion...");
+               callTool('show_results', { sessionId: sessionId || undefined });
+            }
+          }
+
+          saveState();
+          syncRichContext();
 
           if (window.openai?.notifyIntrinsicHeight) {
             setTimeout(() => {
@@ -378,12 +407,12 @@
               const response = await window.openai.callTool(name, args);
               console.log("[SDK] Received tool response:", response);
 
-              // 3. SEND FOLLOW-UP MESSAGE for interactivity
+              // 3. SEND FOLLOW-UP MESSAGE for conversational context
               if (window.openai?.sendFollowUpMessage) {
                 if (name === 'submit_answers') {
-                  window.openai.sendFollowUpMessage({ prompt: "I've submitted my answer! What's next?" });
+                  window.openai.sendFollowUpMessage({ prompt: "I've just submitted my answer to the current question. Let's see what curiosity the garden holds next!" });
                 } else if (name === 'show_results') {
-                  window.openai.sendFollowUpMessage({ prompt: "Reveal my botanical match!" });
+                  window.openai.sendFollowUpMessage({ prompt: "The quiz is complete! Reveal my botanical match to the world." });
                 }
               }
 
@@ -460,10 +489,10 @@
         initApp();
 
         // Theme Sync
-        function syncTheme() {
-          const theme = window.openai?.theme || 'light';
-          console.log("[Quiz] Syncing theme:", theme);
-          if (theme === 'dark') {
+        function syncTheme(theme) {
+          const activeTheme = theme || window.openai?.theme || 'light';
+          console.log("[Quiz] Syncing theme:", activeTheme);
+          if (activeTheme === 'dark') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
@@ -472,6 +501,13 @@
 
         // Initial sync
         syncTheme();
+
+        // Listen for dynamic theme changes from host
+        window.addEventListener("openai:set_globals", (event) => {
+          if (event.detail?.globals?.theme) {
+            syncTheme(event.detail.globals.theme);
+          }
+        });
 
         // Auto-Resize
         if (window.openai?.notifyIntrinsicHeight) {

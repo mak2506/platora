@@ -31,10 +31,23 @@
     }
   </script>
   <style>
+    :root {
+      --bg-aurora: linear-gradient(135deg, #ffc2e2 0%, #ffeb99 50%, #99d6ff 100%);
+      --bg-aurora-dark: linear-gradient(135deg, #831843 0%, #0c0a09 50%, #0c4a6e 100%);
+    }
+
     body {
       min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-aurora);
+      background-attachment: fixed;
+      transition: background 0.5s ease, color 0.3s ease;
       overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark body {
+      background: var(--bg-aurora-dark);
     }
 
     .quote-box {
@@ -43,8 +56,8 @@
     }
 
     .dark .quote-box {
-      border-left-color: #facc15;
-      background: rgba(250, 204, 21, 0.05);
+      border-left-color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .trait-card {
@@ -63,7 +76,7 @@
     }
 
     .dark .main-button {
-      background: #facc15;
+      background: #ffffff;
     }
 
     #resultCard {
@@ -79,8 +92,8 @@
   </style>
 </head>
 
-<body class="bg-yellow-400 text-stone-950 font-sans transition-colors duration-300">
-  <div class="relative flex min-h-screen w-full flex-col p-8 dark:bg-stone-950 overflow-x-hidden transition-colors">
+<body class="text-stone-950 font-sans transition-colors duration-300">
+  <div class="relative flex min-h-screen w-full flex-col p-8 overflow-x-hidden transition-colors dark:text-white">
 
     <div id="resultCard" class="w-full max-w-2xl mx-auto flex flex-col">
       <!-- Header Image -->
@@ -119,7 +132,7 @@
         <!-- Symbolism Block -->
         <div class="flex gap-6 items-start mb-12">
           <div
-            class="w-14 h-14 shrink-0 bg-stone-950 dark:bg-yellow-400 rounded-2xl flex items-center justify-center text-yellow-400 dark:text-stone-950 shadow-xl rotate-3">
+            class="w-14 h-14 shrink-0 bg-stone-950 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-stone-950 shadow-xl rotate-3">
             <span class="material-symbols-outlined text-xl">format_quote</span>
           </div>
           <p id="flowerMeaning" class="text-stone-900 dark:text-stone-300 font-bold text-lg leading-snug pt-2">
@@ -129,8 +142,8 @@
 
         <!-- Action Button -->
         <button id="playAgainBtn"
-          class="main-button w-full py-8 text-yellow-400 dark:text-stone-950 font-black text-2xl rounded-[32px] shadow-2xl hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-4">
-          <span>Search Again</span>
+          class="main-button w-full py-8 bg-stone-950 text-white font-black text-2xl rounded-full shadow-2xl hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-4 dark:bg-white dark:text-stone-950">
+          <span>Play Again</span>
           <span class="material-symbols-outlined text-3xl">refresh</span>
         </button>
       </div>
@@ -270,16 +283,23 @@
           initApp();
 
           // Theme Sync
-          function syncTheme() {
-            const theme = window.openai?.theme || 'light';
-            console.log("[Results] Syncing theme:", theme);
-            if (theme === 'dark') {
+          function syncTheme(theme) {
+            const activeTheme = theme || window.openai?.theme || 'light';
+            console.log("[Results] Syncing theme:", activeTheme);
+            if (activeTheme === 'dark') {
               document.documentElement.classList.add('dark');
             } else {
               document.documentElement.classList.remove('dark');
             }
           }
           syncTheme();
+
+          // Listen for dynamic theme changes from host
+          window.addEventListener("openai:set_globals", (event) => {
+            if (event.detail?.globals?.theme) {
+              syncTheme(event.detail.globals.theme);
+            }
+          });
 
           // Auto-Resize
           if (window.openai?.notifyIntrinsicHeight) {

@@ -45,17 +45,28 @@
     }
   </script>
   <style>
+    :root {
+      --bg-aurora: linear-gradient(135deg, #ffc2e2 0%, #ffeb99 50%, #99d6ff 100%);
+      --bg-aurora-dark: linear-gradient(135deg, #831843 0%, #0c0a09 50%, #0c4a6e 100%);
+    }
+
     body {
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      background: var(--bg-aurora);
+      background-attachment: fixed;
+      transition: background 0.5s ease, color 0.3s ease;
+    }
+
+    .dark body {
+      background: var(--bg-aurora-dark);
     }
   </style>
 </head>
 
-<body class="bg-yellow-400 text-stone-950 font-sans transition-colors duration-300">
-  <div class="relative flex-1 flex flex-col items-center justify-center p-6 dark:bg-stone-950 dark:text-yellow-400">
+<body class="text-stone-950 font-sans transition-colors duration-300">
+  <div class="relative flex-1 flex flex-col items-center justify-center p-6 dark:text-white">
 
     <!-- Hero Illustration -->
     <div class="mb-12 animate-float">
@@ -67,7 +78,7 @@
 
     <!-- Content -->
     <div class="max-w-xs w-full text-center animate-fade-in-up">
-      <h1 class="font-serif text-6xl font-black mb-4 tracking-tighter dark:text-white">Plantora</h1>
+      <h1 class="font-serif text-7xl font-black mb-4 tracking-tighter dark:text-white">Plantora</h1>
       <p id="message" class="text-stone-700 dark:text-stone-300 font-medium leading-relaxed mb-12">
         Awakening the garden... Discover which rare bloom matches your unique spirit.
       </p>
@@ -80,7 +91,7 @@
 
       <!-- Start Button -->
       <button id="startBtn" style="display: none;"
-        class="w-full py-5 bg-stone-950 text-yellow-400 font-black text-lg rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 dark:bg-yellow-400 dark:text-stone-950">
+        class="w-full py-6 bg-stone-950 text-white font-black text-xl rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 dark:bg-white dark:text-stone-950">
         <span>Start Journey</span>
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
@@ -247,10 +258,10 @@
         initApp();
 
         // Theme Sync
-        function syncTheme() {
-          const theme = window.openai?.theme || 'light';
-          console.log("[Welcome] Syncing theme:", theme);
-          if (theme === 'dark') {
+        function syncTheme(theme) {
+          const activeTheme = theme || window.openai?.theme || 'light';
+          console.log("[Welcome] Syncing theme:", activeTheme);
+          if (activeTheme === 'dark') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
@@ -259,6 +270,13 @@
 
         // Initial sync
         syncTheme();
+
+        // Listen for dynamic theme changes from host
+        window.addEventListener("openai:set_globals", (event) => {
+          if (event.detail?.globals?.theme) {
+            syncTheme(event.detail.globals.theme);
+          }
+        });
 
         // Auto-Resize
         if (window.openai?.notifyIntrinsicHeight) {

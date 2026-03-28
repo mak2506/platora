@@ -214,7 +214,11 @@ function createMcpServer(getSessionId) {
         const currentCount = session.questions.length;
         console.log(`[Tool: submit_answers] History Count: ${currentCount}, Total: 10`);
 
-        if (currentCount < 10) {
+        // GUARD: Only generate next question if we have an answer for the LATEST one we asked
+        const latestQ = session.questions[currentCount - 1];
+        const hasLatestAnswer = latestQ ? !!session.answers[latestQ.id] : true; // true if no questions asked yet
+
+        if (currentCount < 10 && hasLatestAnswer) {
           // Generate next question
           const currentTrait = PERSONALITY_TRAITS[currentCount];
           const nextId = `q${currentCount + 1}`;
@@ -271,6 +275,20 @@ function createMcpServer(getSessionId) {
               structuredContent: { success: false, message: "LLM error" }
             };
           }
+        } else if (currentCount < 10 && !hasLatestAnswer) {
+          // Fallback: If no new answer provided, just return the current question again
+          const currentQuestion = session.questions[currentCount - 1];
+          return {
+            content: [{ type: "text", text: "Please answer the current question." }],
+            structuredContent: {
+              success: true,
+              message: "Waiting for answer",
+              nextQuestion: currentQuestion,
+              currentCount: currentCount,
+              totalCount: 10,
+              isComplete: false
+            }
+          };
         } else {
           // Quiz complete
           session.progress = 'ready_for_results';
@@ -328,17 +346,24 @@ function createMcpServer(getSessionId) {
 
       console.log(`[Tool: show_results] Analyzing history: ${questionHistory}`);
 
-      const prompt = `Analyze this user's personality based on their EXACT answers to a 10-question flower quiz and identify which flower from the provided list matches them best.
+      const prompt = `You are a professional personality psychologist and master botanist. 
+      Analyze the user's personality depth based on these 10 quiz responses.
       
       User Answers: ${questionHistory}
       
       Available Flowers: ${JSON.stringify(flowersData.flowers)}
       
-      CRITICAL INSTRUCTIONS:
-      1. Choose exactly ONE flower that best reflects the nuances of their choices.
-      2. Do NOT default to generic or common matches like 'Sunflower' unless the answers explicitly point to high social energy and optimism.
-      3. Be highly sensitive to the balance of traits (e.g. introversion, resilience, creativity).
-      4. Return your response as a JSON object with these EXACT fields:
+      NARROWING THE MATCH (MANDATORY):
+      - Avoid defaulting to 'Orchid' or 'Rose' unless the user's profile is highly sophisticated, rare, and mysterious.
+      - If the user is cheerful, honest, and uncomplicated -> 'Daisy'.
+      - If the user is calm, introspective, and resilient -> 'Lotus'.
+      - If the user is social, optimistic, and energetic -> 'Sunflower'.
+      - If the user is graceful, quiet, and detailed -> 'Lavender'.
+      - If the user is artistic, dreamy, and slightly unconventional -> 'Poppy'.
+      
+      Diversity is key. Ensure the flower essence matches the nuanced answers provided.
+      
+      Format your response as a JSON object with these EXACT fields:
       {
         "flower": {
           "id": "flower_id",
