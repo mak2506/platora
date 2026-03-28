@@ -81,3 +81,17 @@ To test this app in ChatGPT, follow these steps:
 ## Conclusion
 
 This project served as a hands-on introduction to building native-feeling apps for the ChatGPT ecosystem. It focuses on the basics of tool registration, resource handling, and state management within the OpenAI Apps framework.
+
+---
+## 📸 Visuals - Screenshots For References
+
+#### WELCOME SCREEN -LIGHT MODE
+![Welcome Screen](screenshots/welcome-light.png)
+#### WELCOME SCREEN -DARK MODE
+![Welcome Screen Dark Mode](screenshots/welcome-dark.png)
+#### QUIZ SCREEN
+![Quiz Screen](screenshots/quiz.png)
+#### RESULT SCREEN
+![Results Screen](screenshots/result.png)
+
+
