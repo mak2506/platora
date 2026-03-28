@@ -1,0 +1,100 @@
+{
+  "flowers": [
+    {
+      "id": "lotus",
+      "name": "Lotus",
+      "description": "Rising from murky waters to bloom in untainted beauty, the Lotus represents resilience, spiritual awakening, and serenity.",
+      "personality_traits": ["calm", "resilient", "spiritual", "introspective", "balanced"],
+      "symbolism": "Purity, enlightenment, self-regeneration",
+      "vibe": "Zen, deep, quiet strength"
+    },
+    {
+      "id": "rose",
+      "name": "Rose",
+      "description": "Timeless and sophisticated, the Rose is a symbol of deep passion, classic elegance, and a hint of protective mystery.",
+      "personality_traits": ["passionate", "sophisticated", "expressive", "romantic", "protective"],
+      "symbolism": "Love, honor, secrecy",
+      "vibe": "Chic, emotional, traditional yet bold"
+    },
+    {
+      "id": "sunflower",
+      "name": "Sunflower",
+      "description": "Always chasing the sun, the Sunflower exudes pure joy, unwavering loyalty, and a brilliant, infectious optimism.",
+      "personality_traits": ["joyful", "loyal", "optimistic", "social", "supportive"],
+      "symbolism": "Adoration, longevity, happiness",
+      "vibe": "Bright, energetic, warm"
+    },
+    {
+      "id": "lavender",
+      "name": "Lavender",
+      "description": "With its soothing scent and delicate hue, Lavender embodies grace, tranquility, and a healing, thoughtful presence.",
+      "personality_traits": ["graceful", "healing", "thoughtful", "soothing", "detailed"],
+      "symbolism": "Silence, devotion, caution",
+      "vibe": "Ethereal, clean, minimalist"
+    },
+    {
+      "id": "orchid",
+      "name": "Orchid",
+      "description": "Exotic and rare, the Orchid is a symbol of unique beauty, extraordinary strength, and refined luxury.",
+      "personality_traits": ["exotic", "refined", "resourceful", "mysterious", "independent"],
+      "symbolism": "Strength, luxury, beauty",
+      "vibe": "Elite, complex, fascinating"
+    },
+    {
+      "id": "cherry_blossom",
+      "name": "Cherry Blossom",
+      "description": "Brief but breathtaking, the Cherry Blossom celebrates the beauty of the present moment and the cycle of renewal.",
+      "personality_traits": ["mindful", "gentle", "appreciative", "vibrant", "humble"],
+      "symbolism": "Renewal, fleeting beauty, mortality",
+      "vibe": "Optimistic, soft, transient"
+    },
+    {
+      "id": "daisy",
+      "name": "Daisy",
+      "description": "Simple and genuine, the Daisy represents innocence, new beginnings, and a cheerful, honest outlook on life.",
+      "personality_traits": ["innocent", "honest", "cheerful", "unassuming", "reliable"],
+      "symbolism": "New beginnings, true love, purity",
+      "vibe": "Cozy, friendly, nostalgic"
+    },
+    {
+      "id": "lily",
+      "name": "Lily",
+      "description": "Majestic and proud, the Lily symbolizes majesty, purity of heart, and an aura of regal sophistication.",
+      "personality_traits": ["majestic", "proud", "pure", "dignified", "sincere"],
+      "symbolism": "Devotion, humility, virtue",
+      "vibe": "Elegant, formal, grand"
+    },
+    {
+      "id": "jasmine",
+      "name": "Jasmine",
+      "description": "Small but with a powerful, intoxicating fragrance, Jasmine represents modest beauty and sensual strength.",
+      "personality_traits": ["modest", "sensual", "captivating", "kind", "persistent"],
+      "symbolism": "Grace, amiability, sensuality",
+      "vibe": "Sweet, night-blooming, enchanting"
+    },
+    {
+      "id": "marigold",
+      "name": "Marigold",
+      "description": "Vibrant and hardy, the Marigold thrives in the heat, representing passion, creativity, and a determined spirit.",
+      "personality_traits": ["creative", "determined", "resilient", "warm", "bold"],
+      "symbolism": "Passion, creativity, sunlight",
+      "vibe": "Spicy, earthy, vivid"
+    },
+    {
+      "id": "poppy",
+      "name": "Poppy",
+      "description": "Striking and imaginative, the Poppy is a symbol of deep dreams, remembrance, and artistic flair.",
+      "personality_traits": ["artistic", "dreamy", "expressive", "unique", "remembrance"],
+      "symbolism": "Imagination, restful sleep, consolation",
+      "vibe": "Vivid, surreal, bohemian"
+    },
+    {
+      "id": "tulip",
+      "name": "Tulip",
+      "description": "Perfectly balanced and colorful, the Tulip represents perfect love and a well-rounded, adaptive personality.",
+      "personality_traits": ["adaptive", "balanced", "friendly", "colorful", "affectionate"],
+      "symbolism": "Perfect love, fame, imagination",
+      "vibe": "Cheerful, neat, seasonal"
+    }
+  ]
+}

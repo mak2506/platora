@@ -1,95 +1,83 @@
-# Plantora MCP Server
+# Plantora | A ChatGPT App Learning Project
 
-A minimal MCP (Model Context Protocol) server for Plantora — a personality-to-flower quiz. The server exposes tools that let an AI assistant guide users through a short quiz and reveal which flower matches their personality.
+Plantora is a simple personality-to-flower quiz application. This project was built to explore the **OpenAI Apps SDK** and the **Model Context Protocol (MCP)** by creating interactive widgets directly inside ChatGPT.
 
-## Tools
+---
 
-| Tool | Purpose |
-|------|---------|
-| `say_hello` | Greet the user and explain the quiz; ask if they want to start |
-| `start` | Start the quiz; returns 4 multiple-choice questions |
-| `submit_answers` | Validate and record the user's answers |
-| `show_results` | Compute and display the flower match based on answers |
-| `end` | End the quiz and say goodbye |
+## 🛠️ Project Overview
 
-## Prerequisites
+The goal of this project was to learn how to:
+1.  Build an **MCP Server** that exposes tools and UI resources.
+2.  Use the **OpenAI Apps SDK** to render custom HTML/CSS widgets in ChatGPT.
+3.  Connect a local server to ChatGPT using **ngrok**.
+4.  Use an LLM (**Groq**) to dynamically generate quiz questions.
 
-- Node.js 18 or later
-- npm
+### Tools & Resources:
+- **Tools**: `say_hello`, `start`, `submit_answers`, `show_results`, `get_quiz_state`.
+- **UI Widgets**: Welcome, Quiz, and Results screens.
 
-## Setup
+---
 
+## ⚡ Local Setup
+
+### 1. Installation
+Clone the repository and install dependencies:
 ```bash
+git clone <repository-url>
+cd plantora
 npm install
-npm run generate-certs
 ```
 
-`generate-certs` creates self-signed SSL certificates in `./certs/` for HTTPS. For production, use your own certificates and set `SSL_KEY_PATH` and `SSL_CERT_PATH` (or place `key.pem` and `cert.pem` in `./certs/`).
-
-## Running the Server
-
-**HTTP (recommended for local dev, no cert issues):**
+### 2. Configuration
+Create a `.env` file for your API keys:
 ```bash
+cp .env.example .env
+```
+Add your **Groq API Key** to the `API_KEY` field. You can get one for free at [console.groq.com](https://console.groq.com/).
+
+### 3. Run and Tunnel
+Start the server in HTTP mode and use **ngrok** to create a public HTTPS tunnel (required by ChatGPT):
+```bash
+# Terminal 1: Start the server
 npm run start:http
+
+# Terminal 2: Start ngrok on the same port
+ngrok http 3553
 ```
+*Take note of the public URL provided by ngrok (e.g., `https://xyz.ngrok-free.dev`).*
 
-**HTTPS (requires certs):**
-```bash
-npm start
-```
+---
 
-The server listens on port 3553 by default. Set `PORT` to change it.
+## 🔗 How to Connect to ChatGPT
 
-- **HTTP:** `http://localhost:3553/mcp`
-- **HTTPS:** `https://localhost:3553/mcp`
+To test this app in ChatGPT, follow these steps:
 
-## MCP Client Configuration (Streamable HTTP)
+1.  Enable **Developer Mode** in ChatGPT (Settings → Apps & Connectors → Advanced settings).
+2.  In Settings → **Connectors**, click **Create**.
+3.  Select **Streamable HTTP** and paste your ngrok URL with the `/mcp` path:
+    `https://your-id.ngrok-free.dev/mcp`
+4.  Name it "Plantora" and click **Create**.
+5.  Add the connector to a new chat and type *"Start the quiz."*
 
-Use HTTP for local development to avoid certificate issues:
+---
 
-```
-http://localhost:3553/mcp
-```
+## 🤖 Tech Stack
 
-In Cursor's `.cursor/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "plantora": {
-      "url": "http://localhost:3553/mcp"
-    }
-  }
-}
-```
+- **Backend**: Node.js with `@modelcontextprotocol/sdk`.
+- **LLM**: Groq (Llama 3.3 70B) for generating questions and analyzing traits.
+- **Frontend**: Vanilla HTML/CSS with Tailwind CSS (CDN) and Google Fonts.
+- **Tunneling**: ngrok.
 
-Run `npm run start:http` before connecting.
+---
 
-## Project Structure
+## 📖 Key Learnings from the SDK
 
-```
-plantora/
-├── package.json
-├── src/
-│   ├── server.js         # MCP HTTPS server entry
-│   ├── scoring.js        # Answer-to-flower mapping logic
-│   └── tools/
-│       ├── say-hello.js
-│       ├── start.js
-│       ├── submit-answers.js
-│       ├── show-results.js
-│       └── end.js
-├── data/
-│   ├── questions.json    # Quiz questions and options
-│   └── flower-mapping.json  # Scoring rules per flower
-├── certs/                # SSL certs (create via npm run generate-certs)
-├── scripts/
-│   └── generate-certs.js
-└── README.md
-```
+- **`window.openai` Bridge**: Learned how to communicate between the widget iframe and the host.
+- **Theme Sync**: Used `openai:set_globals` to make the UI adapt to ChatGPT's Dark/Light mode.
+- **Tool-Driven UI**: Learned how to trigger UI changes from the model's tool outputs using `structuredContent`.
 
-## Data Files
+---
 
-- **data/questions.json** — Defines 4 personality questions with multiple-choice options.
-- **data/flower-mapping.json** — Maps answer combinations to flowers (Lotus, Rose, Sunflower, Lavender) using weighted scoring.
+## Conclusion
 
-Edit these files to customize the quiz content and flower matches.
+This project served as a hands-on introduction to building native-feeling apps for the ChatGPT ecosystem. It focuses on the basics of tool registration, resource handling, and state management within the OpenAI Apps framework.
