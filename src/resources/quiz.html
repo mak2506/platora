@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Plantora - Personality Quiz</title>
+  <title>Fluduro - Personality Quiz</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap"
@@ -208,12 +208,12 @@
         let isComplete = false;
         // Try to recover sessionId from storage or URL as first-line fallback
         const urlParams = new URLSearchParams(window.location.search);
-        let sessionId = urlParams.get('sessionId') || localStorage.getItem('plantora_session_id') || null;
+        let sessionId = urlParams.get('sessionId') || localStorage.getItem('fluduro_session_id') || null;
 
         let selectedOption = null;
 
         function saveState() {
-          if (sessionId) localStorage.setItem('plantora_session_id', sessionId);
+          if (sessionId) localStorage.setItem('fluduro_session_id', sessionId);
           if (window.openai?.setWidgetState) {
             window.openai.setWidgetState({
               questions,
@@ -230,7 +230,7 @@
           if (!questions.length) return;
           const q = questions[0];
           const status = isComplete ? 'Questionnaire complete' : `On question ${currentCount} of 10`;
-          const msg = `Plantora Quiz Progress: ${status}. The user is currently looking at this question: "${q.text}". 
+          const msg = `Fluduro Quiz Progress: ${status}. The user is currently looking at this question: "${q.text}". 
                        Current Session ID: ${sessionId}`;
 
           if (window.openai?.updateModelContext) {
@@ -339,7 +339,7 @@
 
           if (content.sessionId) {
             sessionId = content.sessionId;
-            localStorage.setItem('plantora_session_id', sessionId);
+            localStorage.setItem('fluduro_session_id', sessionId);
           }
 
           // Inclusive check for any form of question data

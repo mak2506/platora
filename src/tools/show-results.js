@@ -9,5 +9,5 @@ export function formatResults(answers) {
 
 ${flower.description}
 
-Thank you for taking the Plantora quiz! You can call \`end\` when you're done.`;
+Thank you for taking the Fluduro quiz! You can call \`end\` when you're done.`;
 }

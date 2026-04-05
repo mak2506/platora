@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Privacy Policy | Fluduro Floral Intelligence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "botanical": "#166534",
+                        "sage": "#f0fdf4",
+                    },
+                    fontFamily: {
+                        "serif": ["Playfair Display", "serif"],
+                        "sans": ["Public Sans", "sans-serif"],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-aurora: linear-gradient(135deg, #ffc2e2 0%, #ffeb99 50%, #99d6ff 100%);
+            --bg-aurora-dark: linear-gradient(135deg, #831843 0%, #0c0a09 50%, #0c4a6e 100%);
+        }
+        
+        body {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-aurora);
+            background-attachment: fixed;
+            transition: background 0.5s ease, color 0.3s ease;
+        }
+
+        /* Default Dark Mode based on system preference */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--bg-aurora-dark);
+                color: white;
+            }
+        }
+
+        /* Force Dark Mode when 'dark' class exists (for GPT sync) */
+        .dark body { 
+            background: var(--bg-aurora-dark);
+            color: white;
+        }
+
+        .glass { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .dark .glass { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* Glass styling for media query dark mode too */
+        @media (prefers-color-scheme: dark) {
+            .glass { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); }
+        }
+    </style>
+</head>
+<body class="text-stone-900 dark:text-white font-sans transition-colors duration-300">
+    <div class="flex-1 flex flex-col items-center py-24 px-6 dark:text-white">
+        <div class="max-w-3xl w-full glass rounded-[3rem] p-12 sm:p-20 shadow-2xl overflow-hidden relative">
+            <div class="absolute top-0 right-0 p-12 opacity-10 rotate-12">
+                <span class="material-symbols-outlined text-9xl">policy</span>
+            </div>
+            
+            <header class="mb-16">
+                <h1 class="font-serif text-5xl font-black mb-4 tracking-tighter dark:text-white">Privacy Policy</h1>
+                <p class="text-stone-500 dark:text-stone-200 font-bold uppercase tracking-widest text-xs">Last Updated: April 5, 2026</p>
+            </header>
+
+            <div class="prose prose-stone dark:prose-invert max-w-none space-y-8 font-medium leading-relaxed text-stone-800 dark:text-white">
+                <section>
+                    <h2 class="font-serif text-2xl font-bold mb-4 text-stone-950 dark:text-white">1. Transparency First</h2>
+                    <p>Fluduro is a botanical personality quiz designed purely for entertainment and gaming. We believe in complete transparency regarding your data. We do not sell, rent, or trade your information.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-serif text-2xl font-bold mb-4 text-stone-950 dark:text-white">2. Data Usage & Storage</h2>
+                    <p>We do not store your personal data long-term. All quiz progress and results are stored in temporary, session-only memory to power the game. Once your session ends or is cleared, this data is gone. We do not maintain a permanent database of your identity or answers.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-serif text-2xl font-bold mb-4 text-stone-950 dark:text-white">3. ChatGPT Conversation History</h2>
+                    <p>Fluduro operates as an MCP server within the ChatGPT environment. It is important to note that <strong>we do not have access to your ChatGPT conversation history</strong>. We only receive the specific inputs you provide directly to the Fluduro tool during your session.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-serif text-2xl font-bold mb-4 text-stone-950 dark:text-white">4. Third-Party Processing</h2>
+                    <p>To generate creative plant-themed questions and analyze your botanical personality, we use <strong>Groq Cloud LLM services</strong>. Your session-based quiz answers are processed by Groq to generate results. These third parties do not use your data for any other purpose than fulfilling the request within the game.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-serif text-2xl font-bold mb-4 text-stone-950 dark:text-white">5. Contact Us</h2>
+                    <p>For any questions regarding our minimal data practices, please contact us at <a href="mailto:support@fluduro.com" class="text-stone-950 dark:text-white underline font-bold">support@fluduro.com</a>.</p>
+                </section>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-200 opacity-60">
+            © 2026 Fluduro Floral Intelligence
+        </footer>
+    </div>
+
+    <script>
+        // Sync Theme from Host (Optional Override)
+        function syncTheme() {
+            const activeTheme = (window.openai?.theme);
+            if (activeTheme === 'dark') { document.documentElement.classList.add('dark'); }
+            else if (activeTheme === 'light') { document.documentElement.classList.remove('dark'); }
+            // If no activeTheme from host, it defaults to system via CSS media queries
+        }
+        syncTheme();
+        window.addEventListener("openai:set_globals", (e) => e.detail?.globals?.theme && syncTheme());
+    </script>
+</body>
+</html>

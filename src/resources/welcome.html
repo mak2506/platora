@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Plantora Welcome</title>
+  <title>Fluduro Welcome</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap"
@@ -78,7 +78,7 @@
 
     <!-- Content -->
     <div class="max-w-xs w-full text-center animate-fade-in-up">
-      <h1 class="font-serif text-7xl font-black mb-4 tracking-tighter dark:text-white">Plantora</h1>
+      <h1 class="font-serif text-7xl font-black mb-4 tracking-tighter dark:text-white">Fluduro</h1>
       <p id="message" class="text-stone-700 dark:text-stone-300 font-medium leading-relaxed mb-12">
         Awakening the garden... Discover which rare bloom matches your unique spirit.
       </p>
@@ -141,7 +141,7 @@
           currentTipIndex = (currentTipIndex + 1) % tips.length;
           tipElement.style.opacity = 0;
           setTimeout(() => {
-            tipElement.textContent = tips[currentTipIndex];
+          tipElement.textContent = tips[currentTipIndex].replace('Monstera', 'Flowers');
             tipElement.style.opacity = 1;
           }, 300);
         }, 5000);
@@ -151,7 +151,7 @@
             window.openai.updateModelContext({
               content: [{
                 type: "text",
-                text: "The user is now at the Plantora welcome screen, ready to start their botanical personality journey."
+                text: "The user is now at the Fluduro welcome screen, ready to start their botanical personality journey."
               }]
             });
           }

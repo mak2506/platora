@@ -1,7 +1,7 @@
 {
-  "name": "plantora-mcp-server",
+  "name": "fluduro-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for Plantora - personality-to-flower quiz",
+  "description": "MCP server for Fluduro - personality-to-flower quiz",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

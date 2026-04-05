@@ -17,9 +17,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 import dotenv from "dotenv";
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
-const WELCOME_URI = "ui://plantora/welcome.html";
-const QUIZ_URI = "ui://plantora/quiz.html";
-const RESULTS_URI = "ui://plantora/results.html";
+const IS_PROD = process.env.NODE_ENV === "production";
+
+const WELCOME_URI = "ui://fluduro/welcome.html";
+const QUIZ_URI = "ui://fluduro/quiz.html";
+const RESULTS_URI = "ui://fluduro/results.html";
 
 const PERSONALITY_TRAITS = [
   "Social Energy (Introversion vs. Extroversion)",
@@ -34,16 +36,76 @@ const PERSONALITY_TRAITS = [
   "Resource Management (Cautious vs. Generous)"
 ];
 
+// ─── Security Headers ────────────────────────────────────────────────────────
+function applySecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "fullscreen=()");
+  // Permissive CSP to allow ChatGPT/CDN resources without breaking the app
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src https://fonts.gstatic.com data:",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https://api.groq.com",
+      "frame-ancestors 'self' https://chatgpt.com https://*.openai.com",
+    ].join("; ")
+  );
+}
+
+// ─── Rate Limiter ─────────────────────────────────────────────────────────────
+const rateLimitMap = new Map(); // ip → { count, resetAt }
+const RATE_LIMIT_MAX = 60;       // requests
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in ms
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  let record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetAt) {
+    record = { count: 1, resetAt: now + RATE_LIMIT_WINDOW };
+    rateLimitMap.set(ip, record);
+    return false;
+  }
+
+  record.count += 1;
+  if (record.count > RATE_LIMIT_MAX) {
+    return true;
+  }
+  return false;
+}
+
+// Clean up rate limit map every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now > record.resetAt) rateLimitMap.delete(ip);
+  }
+}, 300000);
+
+// ─── Logging Helpers ──────────────────────────────────────────────────────────
+function log(msg) {
+  console.log(`[${new Date().toISOString()}] ${msg}`);
+}
+function logError(msg, err) {
+  console.error(`[${new Date().toISOString()}] ERROR: ${msg}`, err ?? "");
+}
+
+// ─── MCP Server Factory ───────────────────────────────────────────────────────
 function createMcpServer(getSessionId) {
   const mcpServer = new McpServer({
-    name: "plantora",
+    name: "fluduro",
     version: "1.0.0",
   });
 
   mcpServer.registerResource(
     "welcome-widget",
     WELCOME_URI,
-    { mimeType: "text/html", description: "Welcome card for Plantora quiz" },
+    { mimeType: "text/html", description: "Welcome card for Fluduro quiz" },
     async () => ({
       contents: [
         {
@@ -57,7 +119,7 @@ function createMcpServer(getSessionId) {
   mcpServer.registerResource(
     "quiz-widget",
     QUIZ_URI,
-    { mimeType: "text/html", description: "Quiz form for Plantora" },
+    { mimeType: "text/html", description: "Quiz form for Fluduro" },
     async () => ({
       contents: [
         {
@@ -71,7 +133,7 @@ function createMcpServer(getSessionId) {
   mcpServer.registerResource(
     "results-widget",
     RESULTS_URI,
-    { mimeType: "text/html", description: "Flower result card for Plantora" },
+    { mimeType: "text/html", description: "Flower result card for Fluduro" },
     async () => ({
       contents: [
         {
@@ -87,13 +149,13 @@ function createMcpServer(getSessionId) {
     "say_hello",
     {
       description:
-        "Greet the user and explain what Plantora offers: a personality quiz to discover which flower matches their personality. Ask if they want to start. IMPORTANT: The UI widget will handle the primary explanation. Do not repeat instructions or welcome text into the chat if it's already in the UI.",
+        "Greet the user and explain what Fluduro offers: a personality quiz to discover which flower matches their personality. Ask if they want to start. IMPORTANT: The UI widget will handle the primary explanation. Do not repeat instructions or welcome text into the chat if it's already in the UI.",
       _meta: {
         ui: { resourceUri: WELCOME_URI },
         "openai/outputTemplate": WELCOME_URI,
         "openai/toolInvocation/invoking": "Waking up the garden...",
-        "openai/toolInvocation/invoked": "Welcome to Plantora",
-        "openai/widgetDescription": "A welcome screen is showing for the Plantora flower quiz, inviting the user to start a botanical personality journey."
+        "openai/toolInvocation/invoked": "Welcome to Fluduro",
+        "openai/widgetDescription": "A welcome screen is showing for the Fluduro flower quiz, inviting the user to start a botanical personality journey."
       },
     },
     async () => {
@@ -124,7 +186,7 @@ function createMcpServer(getSessionId) {
     },
     async () => {
       const sid = getSessionId();
-      console.log(`[Tool: start] Session ID: ${sid}`);
+      log(`[Tool: start] Session ID: ${sid}`);
       const session = getSession(sid);
       if (session) {
         session.questions = [];
@@ -157,7 +219,7 @@ function createMcpServer(getSessionId) {
         const jsonStart = responseText.indexOf('{');
         const jsonEnd = responseText.lastIndexOf('}') + 1;
         const question = JSON.parse(responseText.substring(jsonStart, jsonEnd));
-        console.log(`[Tool: start] Generated Q1 (Trait: ${trait}): ${question.text}`);
+        log(`[Tool: start] Generated Q1 (Trait: ${trait}): ${question.text}`);
 
         if (session) {
           session.questions = [question];
@@ -174,7 +236,7 @@ function createMcpServer(getSessionId) {
           structuredContent: { sessionId: sid, questions: [question], currentCount: 1, totalCount: 10, isComplete: false, trait: trait },
         };
       } catch (err) {
-        console.error("LLM start error:", err);
+        logError("LLM start error:", err);
         const fallback = { id: "q1", text: "How would you describe your perfect afternoon?", options: [{ value: "a", label: "Quietly reading" }, { value: "b", label: "Out in nature" }, { value: "c", label: "With friends" }, { value: "d", label: "Trying something new" }] };
         if (session) { session.questions = [fallback]; session.progress = 1; }
         return { content: [{ type: "text", text: "Started with fallback." }], structuredContent: { questions: [fallback], currentCount: 1, totalCount: 10, isComplete: false } };
@@ -203,23 +265,20 @@ function createMcpServer(getSessionId) {
     },
     async ({ answers, sessionId }) => {
       const sid = sessionId || getSessionId();
-      console.log(`[Tool: submit_answers] Using Sid: ${sid}, Received: ${JSON.stringify(answers)}`);
+      log(`[Tool: submit_answers] Using Sid: ${sid}`);
       const session = getSession(sid);
       if (session) {
-        // Only update if answers are provided
         if (answers && Object.keys(answers).length > 0) {
           session.answers = { ...session.answers, ...answers };
         }
 
         const currentCount = session.questions.length;
-        console.log(`[Tool: submit_answers] History Count: ${currentCount}, Total: 10`);
+        log(`[Tool: submit_answers] History Count: ${currentCount}, Total: 10`);
 
-        // GUARD: Only generate next question if we have an answer for the LATEST one we asked
         const latestQ = session.questions[currentCount - 1];
-        const hasLatestAnswer = latestQ ? !!session.answers[latestQ.id] : true; // true if no questions asked yet
+        const hasLatestAnswer = latestQ ? !!session.answers[latestQ.id] : true;
 
         if (currentCount < 10 && hasLatestAnswer) {
-          // Generate next question
           const currentTrait = PERSONALITY_TRAITS[currentCount];
           const nextId = `q${currentCount + 1}`;
           const prompt = `Generate exactly ONE unique, creative multiple-choice question (4 options) for a "Which flower are you?" quiz. 
@@ -251,7 +310,7 @@ function createMcpServer(getSessionId) {
             const jsonStart = responseText.indexOf('{');
             const jsonEnd = responseText.lastIndexOf('}') + 1;
             const nextQuestion = JSON.parse(responseText.substring(jsonStart, jsonEnd));
-            console.log(`[Tool: submit_answers] Generated Q${currentCount + 1} (Trait: ${currentTrait}): ${nextQuestion.text}`);
+            log(`[Tool: submit_answers] Generated Q${currentCount + 1} (Trait: ${currentTrait}): ${nextQuestion.text}`);
 
             session.questions.push(nextQuestion);
             session.progress = currentCount + 1;
@@ -269,14 +328,13 @@ function createMcpServer(getSessionId) {
               },
             };
           } catch (err) {
-            console.error("LLM next question error:", err);
+            logError("LLM next question error:", err);
             return {
               content: [{ type: "text", text: "Something went wrong generating the next question. Please try again." }],
               structuredContent: { success: false, message: "LLM error" }
             };
           }
         } else if (currentCount < 10 && !hasLatestAnswer) {
-          // Fallback: If no new answer provided, just return the current question again
           const currentQuestion = session.questions[currentCount - 1];
           return {
             content: [{ type: "text", text: "Please answer the current question." }],
@@ -290,7 +348,6 @@ function createMcpServer(getSessionId) {
             }
           };
         } else {
-          // Quiz complete
           session.progress = 'ready_for_results';
           return {
             content: [{ type: "text", text: "All 10 questions answered! You're ready to see your results." }],
@@ -333,18 +390,17 @@ function createMcpServer(getSessionId) {
     },
     async ({ sessionId }) => {
       const sid = sessionId || getSessionId();
-      console.log(`[Tool: show_results] Using Sid: ${sid}`);
+      log(`[Tool: show_results] Using Sid: ${sid}`);
       const session = getSession(sid);
       if (!session || Object.keys(session.answers).length === 0) {
         return { content: [{ type: "text", text: "No quiz data found to calculate results." }], structuredContent: { success: false } };
       }
 
       const flowersData = JSON.parse(readFileSync(join(__dirname, "..", "data", "flowers.json"), "utf-8"));
-      const userAnswers = JSON.stringify(session.answers);
       const questionHistoryArr = session.questions.map(q => ({ q: q.text, a: session.answers[q.id] }));
       const questionHistory = JSON.stringify(questionHistoryArr);
 
-      console.log(`[Tool: show_results] Analyzing history: ${questionHistory}`);
+      log(`[Tool: show_results] Analyzing ${questionHistoryArr.length} answers`);
 
       const prompt = `You are a professional personality psychologist and master botanist. 
       Analyze the user's personality depth based on these 10 quiz responses.
@@ -379,26 +435,22 @@ function createMcpServer(getSessionId) {
       }`;
 
       try {
-        console.log("[Tool: show_results] Requesting personality match from Groq...");
+        log("[Tool: show_results] Requesting personality match from Groq...");
         const responseText = await callGroq({
           prompt,
           system: "You are a professional personality psychologist and botanist who only outputs JSON. Be concise but deep in your descriptions.",
           model: "llama-3.3-70b-versatile",
-          temperature: 0.7 // Increased temperature for better variety in personality matches
+          temperature: 0.7
         });
-
-        console.log(`[Tool: show_results] LLM raw response: ${responseText}`);
 
         let result;
         try {
           const jsonStart = responseText.indexOf('{');
           const jsonEnd = responseText.lastIndexOf('}') + 1;
           const parsed = JSON.parse(responseText.substring(jsonStart, jsonEnd));
-          // Handle both { flower: { ... } } and direct { id, name, description }
           result = parsed.flower || parsed;
         } catch (parseErr) {
-          console.error("[Tool: show_results] JSON parse failed, trying fallback extraction...");
-          // Simple fallback extraction if JSON is messy
+          logError("[Tool: show_results] JSON parse failed, trying fallback extraction...");
           const nameMatch = responseText.match(/"name":\s*"([^"]+)"/);
           const descMatch = responseText.match(/"description":\s*"([^"]+)"/);
           const idMatch = responseText.match(/"id":\s*"([^"]+)"/);
@@ -424,7 +476,7 @@ function createMcpServer(getSessionId) {
           },
         };
       } catch (err) {
-        console.error("LLM result error:", err);
+        logError("LLM result error:", err);
         return {
           content: [{ type: "text", text: "Something went wrong calculating your results." }],
           structuredContent: { success: false, message: "LLM error" }
@@ -480,62 +532,113 @@ function createMcpServer(getSessionId) {
   return mcpServer;
 }
 
+// ─── Request Handler ──────────────────────────────────────────────────────────
 const transports = {};
 const PORT = parseInt(process.env.PORT || "3553", 10);
 
 const requestListener = async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  // Derive client IP (respects X-Forwarded-For from reverse proxies)
+  const clientIp =
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown";
+
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const sessionId = req.headers["mcp-session-id"];
 
-  // DEBUG: Log all headers to find stable host-provided IDs
-  console.log(`[Server] ${req.method} ${url.pathname}`);
-  console.log(`[Server] Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  // Apply security headers to every response
+  applySecurityHeaders(res);
 
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id');
-  res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+  // CORS – open for all origins (ChatGPT/dev compat)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, mcp-session-id");
+  res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(240).end();
+  if (req.method === "OPTIONS") {
+    res.writeHead(204).end();
     return;
   }
 
-  if (url.pathname === '/') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ name: "plantora", version: "1.0.0", status: "ok" }));
+  // Rate limiting (skip for OPTIONS which was handled above)
+  if (isRateLimited(clientIp)) {
+    log(`[RateLimit] Blocked ${clientIp} on ${url.pathname}`);
+    res.writeHead(429, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Too many requests. Please slow down." }));
     return;
   }
 
-  if (url.pathname === '/mcp') {
+  // Minimal request logging (no headers dump in production)
+  log(`${req.method} ${url.pathname} [${clientIp}]`);
+  if (!IS_PROD) {
+    console.log(`[Debug] mcp-session-id: ${sessionId || "none"}`);
+  }
+
+  // Health check / info endpoint
+  if (url.pathname === "/") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ name: "fluduro", version: "1.0.0", status: "ok" }));
+    return;
+  }
+
+  // Public static pages
+  const publicPages = {
+    "/support": "support.html",
+    "/privacy": "privacy.html",
+    "/terms": "terms.html",
+  };
+
+  if (publicPages[url.pathname]) {
+    try {
+      const filePath = join(__dirname, "..", "public", publicPages[url.pathname]);
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      });
+      res.end(readFileSync(filePath));
+      return;
+    } catch (err) {
+      logError(`Error serving public page ${url.pathname}:`, err);
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("Not Found");
+      return;
+    }
+  }
+
+  if (url.pathname === "/mcp") {
     try {
       let transport;
       if (sessionId && transports[sessionId]) {
         transport = transports[sessionId];
-      } else if (req.method === 'POST') {
-        // Handle Initialize or new session
+      } else if (req.method === "POST") {
         const body = await new Promise((resolve, reject) => {
-          let data = '';
-          req.on('data', chunk => data += chunk);
-          req.on('end', () => {
-            try {
-              const parsed = JSON.parse(data);
-              console.log(`[Server] Parsed POST body: ${JSON.stringify(parsed)}`);
-              resolve(parsed);
+          let data = "";
+          let size = 0;
+          const MAX_BODY_SIZE = 1024 * 64; // 64 KB guard
+
+          req.on("data", (chunk) => {
+            size += chunk.length;
+            if (size > MAX_BODY_SIZE) {
+              req.destroy();
+              reject(new Error("Request body too large"));
+              return;
             }
-            catch (e) {
-              console.error("[Server] JSON parse error in body:", e.message);
+            data += chunk;
+          });
+          req.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              logError("JSON parse error in request body:", e.message);
               resolve({});
             }
           });
-          req.on('error', reject);
+          req.on("error", reject);
         });
 
         if (isInitializeRequest(body)) {
-          // REUSE sessionId from header if provided and valid, otherwise new
           const sid = (sessionId && getSession(sessionId)) ? sessionId : randomUUID();
-          console.log(`[Server] Initializing session: ${sid} (${sessionId === sid ? 'REUSED' : 'NEW'})`);
+          log(`[Server] Initializing session: ${sid} (${sessionId === sid ? "REUSED" : "NEW"})`);
 
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => sid,
@@ -545,13 +648,13 @@ const requestListener = async (req, res) => {
           });
           transport.onclose = () => {
             if (sid && transports[sid]) {
-              console.log(`[Server] Session closed: ${sid}`);
+              log(`[Server] Session closed: ${sid}`);
               delete transports[sid];
               cleanupSessions();
             }
           };
 
-          res.setHeader('mcp-session-id', sid);
+          res.setHeader("mcp-session-id", sid);
           const server = createMcpServer(() => transport.sessionId);
           await server.connect(transport);
           await transport.handleRequest(req, res, body);
@@ -561,43 +664,48 @@ const requestListener = async (req, res) => {
 
       if (transport) {
         if (transport.sessionId) {
-          res.setHeader('mcp-session-id', transport.sessionId);
+          res.setHeader("mcp-session-id", transport.sessionId);
         }
-
-        if (req.method === 'POST') {
-          await transport.handleRequest(req, res);
-        } else {
-          await transport.handleRequest(req, res);
-        }
+        await transport.handleRequest(req, res);
       } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          jsonrpc: "2.0",
-          error: { code: -32000, message: "No valid session or initialize request" },
-          id: null,
-        }));
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "No valid session or initialize request" },
+            id: null,
+          })
+        );
       }
     } catch (error) {
-      console.error("MCP handler error:", error);
+      logError("MCP handler error:", error);
       if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" } }));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            error: { code: -32603, message: "Internal error" },
+            id: null,
+          })
+        );
       }
     }
     return;
   }
 
-  res.writeHead(404).end('Not Found');
+  res.writeHead(404, { "Content-Type": "text/plain" });
+  res.end("Not Found");
 };
 
+// ─── Server Startup ───────────────────────────────────────────────────────────
 async function startServer() {
   const useHttp = process.env.USE_HTTP === "true" || process.env.USE_HTTP === "1";
 
   if (useHttp) {
     const httpServer = http.createServer(requestListener);
-    httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`Plantora MCP HTTP server listening on http://0.0.0.0:${PORT}`);
-      console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      log(`Fluduro MCP HTTP server listening on http://0.0.0.0:${PORT}`);
+      log(`MCP endpoint: http://localhost:${PORT}/mcp`);
     });
   } else {
     const sslKeyPath = process.env.SSL_KEY_PATH || "certs/key.pem";
@@ -613,30 +721,44 @@ async function startServer() {
       key = fs.readFileSync(keyPath, "utf8");
       cert = fs.readFileSync(certPath, "utf8");
     } catch (err) {
-      console.error(
-        "HTTPS certificates not found. Run: npm run generate-certs"
-      );
+      logError("HTTPS certificates not found. Run: npm run generate-certs");
       console.error("Or set USE_HTTP=true for local dev without certs.");
       process.exit(1);
     }
 
     const httpsServer = https.createServer({ key, cert }, requestListener);
-    httpsServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`Plantora MCP HTTPS server listening on https://0.0.0.0:${PORT}`);
-      console.log(`MCP endpoint: https://localhost:${PORT}/mcp`);
+    httpsServer.listen(PORT, "0.0.0.0", () => {
+      log(`Fluduro MCP HTTPS server listening on https://0.0.0.0:${PORT}`);
+      log(`MCP endpoint: https://localhost:${PORT}/mcp`);
     });
   }
 
   process.on("SIGINT", async () => {
+    log("Shutting down gracefully...");
     for (const sid of Object.keys(transports)) {
       try {
         await transports[sid].close();
       } catch (e) {
-        console.error(e);
+        logError("Error closing transport:", e);
+      }
+    }
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", async () => {
+    log("Received SIGTERM. Shutting down...");
+    for (const sid of Object.keys(transports)) {
+      try {
+        await transports[sid].close();
+      } catch (e) {
+        logError("Error closing transport:", e);
       }
     }
     process.exit(0);
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logError("Failed to start server:", err);
+  process.exit(1);
+});

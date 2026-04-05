@@ -1,4 +1,4 @@
-export const SAY_HELLO_RESPONSE = `Welcome to Plantora! 🌸
+export const SAY_HELLO_RESPONSE = `Welcome to Fluduro! 🌸
 
 I'm your personal flower personality quiz. I can help you discover which flower best matches your personality based on how you feel and how you deal with different situations.
 

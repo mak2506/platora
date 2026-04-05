@@ -1,6 +1,6 @@
-# Plantora | A ChatGPT App Learning Project
+# Fluduro | A ChatGPT App Learning Project
 
-Plantora is a simple personality-to-flower quiz application. This project was built to explore the **OpenAI Apps SDK** and the **Model Context Protocol (MCP)** by creating interactive widgets directly inside ChatGPT.
+Fluduro is a simple personality-to-flower quiz application. This project was built to explore the **OpenAI Apps SDK** and the **Model Context Protocol (MCP)** by creating interactive widgets directly inside ChatGPT.
 
 ---
 
@@ -21,7 +21,7 @@ The goal of this project was to learn how to:
 ## 📸 Visuals
 
 ````carousel
-![Welcome Screen (Light Mode)](screenshots/welcome-light.png)
+![Welcome Screen (Light Mode)](./screenshots/welcome-light.png)
 <!-- slide -->
 ![Welcome Screen (Dark Mode)](screenshots/welcome-dark.png)
 <!-- slide -->
@@ -70,7 +70,7 @@ To test this app in ChatGPT, follow these steps:
 2.  In Settings → **Connectors**, click **Create**.
 3.  Select **Streamable HTTP** and paste your ngrok URL with the `/mcp` path:
     `https://your-id.ngrok-free.dev/mcp`
-4.  Name it "Plantora" and click **Create**.
+4.  Name it "Fluduro" and click **Create**.
 5.  Add the connector to a new chat and type *"Start the quiz."*
 
 ---
