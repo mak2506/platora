@@ -1,5 +1,4 @@
 import http from "http";
-import https from "https";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -17,7 +16,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 import dotenv from "dotenv";
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
-const IS_PROD = process.env.NODE_ENV === "production";
+// Set DEV_MODE=true in your .env (or shell) to enable verbose request logging.
+const DEV_MODE = process.env.DEV_MODE === "true";
 
 const WELCOME_URI = "ui://fluduro/welcome.html";
 const QUIZ_URI = "ui://fluduro/quiz.html";
@@ -36,13 +36,23 @@ const PERSONALITY_TRAITS = [
   "Resource Management (Cautious vs. Generous)"
 ];
 
+// ─── Trusted Origins ─────────────────────────────────────────────────────────
+// These origins receive explicit CORS reflection (required for credentialed MCP requests).
+const TRUSTED_ORIGINS = new Set([
+  "https://chatgpt.com",
+  "https://chat.openai.com",
+  "https://platform.openai.com",
+]);
+
 // ─── Security Headers ────────────────────────────────────────────────────────
 function applySecurityHeaders(res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("Referrer-Policy", "no-referrer");
+  // Allow framing by ChatGPT — SAMEORIGIN would block cross-origin embedding
+  res.setHeader("X-Frame-Options", "ALLOWALL");
+  // strict-origin-when-cross-origin: sends Referer on same-origin, origin-only cross-origin
+  // ("no-referrer" was stripping the Referer header ChatGPT needs for MCP handshake)
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "fullscreen=()");
-  // Permissive CSP to allow ChatGPT/CDN resources without breaking the app
   res.setHeader(
     "Content-Security-Policy",
     [
@@ -549,10 +559,18 @@ const requestListener = async (req, res) => {
   // Apply security headers to every response
   applySecurityHeaders(res);
 
-  // CORS – open for all origins (ChatGPT/dev compat)
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS — reflect origin for trusted ChatGPT domains (supports credentialed requests);
+  // fall back to wildcard for all other callers (curl, dev tools, etc.)
+  const origin = req.headers.origin || "";
+  if (TRUSTED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, mcp-session-id");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, mcp-session-id, Authorization");
   res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
 
   if (req.method === "OPTIONS") {
@@ -568,10 +586,9 @@ const requestListener = async (req, res) => {
     return;
   }
 
-  // Minimal request logging (no headers dump in production)
   log(`${req.method} ${url.pathname} [${clientIp}]`);
-  if (!IS_PROD) {
-    console.log(`[Debug] mcp-session-id: ${sessionId || "none"}`);
+  if (DEV_MODE) {
+    log(`[Debug] mcp-session-id: ${sessionId || "none"}`);
   }
 
   // Health check / info endpoint
@@ -697,68 +714,22 @@ const requestListener = async (req, res) => {
   res.end("Not Found");
 };
 
-// ─── Server Startup ───────────────────────────────────────────────────────────
-async function startServer() {
-  const useHttp = process.env.USE_HTTP === "true" || process.env.USE_HTTP === "1";
-
-  if (useHttp) {
-    const httpServer = http.createServer(requestListener);
-    httpServer.listen(PORT, "0.0.0.0", () => {
-      log(`Fluduro MCP HTTP server listening on http://0.0.0.0:${PORT}`);
-      log(`MCP endpoint: http://localhost:${PORT}/mcp`);
-    });
-  } else {
-    const sslKeyPath = process.env.SSL_KEY_PATH || "certs/key.pem";
-    const sslCertPath = process.env.SSL_CERT_PATH || "certs/cert.pem";
-    const fs = await import("fs");
-    const path = await import("path");
-    const keyPath = path.resolve(process.cwd(), sslKeyPath);
-    const certPath = path.resolve(process.cwd(), sslCertPath);
-
-    let key;
-    let cert;
-    try {
-      key = fs.readFileSync(keyPath, "utf8");
-      cert = fs.readFileSync(certPath, "utf8");
-    } catch (err) {
-      logError("HTTPS certificates not found. Run: npm run generate-certs");
-      console.error("Or set USE_HTTP=true for local dev without certs.");
-      process.exit(1);
-    }
-
-    const httpsServer = https.createServer({ key, cert }, requestListener);
-    httpsServer.listen(PORT, "0.0.0.0", () => {
-      log(`Fluduro MCP HTTPS server listening on https://0.0.0.0:${PORT}`);
-      log(`MCP endpoint: https://localhost:${PORT}/mcp`);
-    });
-  }
-
-  process.on("SIGINT", async () => {
-    log("Shutting down gracefully...");
-    for (const sid of Object.keys(transports)) {
-      try {
-        await transports[sid].close();
-      } catch (e) {
-        logError("Error closing transport:", e);
-      }
-    }
-    process.exit(0);
-  });
-
-  process.on("SIGTERM", async () => {
-    log("Received SIGTERM. Shutting down...");
-    for (const sid of Object.keys(transports)) {
-      try {
-        await transports[sid].close();
-      } catch (e) {
-        logError("Error closing transport:", e);
-      }
-    }
-    process.exit(0);
-  });
-}
-
-startServer().catch((err) => {
-  logError("Failed to start server:", err);
-  process.exit(1);
+// ─── Start ────────────────────────────────────────────────────────────────────
+// Plain HTTP — cloud platforms (Railway, Render, Fly) terminate TLS at the edge.
+// No certs, no config. Just runs.
+const server = http.createServer(requestListener);
+server.listen(PORT, "0.0.0.0", () => {
+  log(`Fluduro MCP server listening on port ${PORT}`);
+  if (DEV_MODE) log(`MCP endpoint → http://localhost:${PORT}/mcp`);
 });
+
+process.on("SIGINT",  shutdown);
+process.on("SIGTERM", shutdown);
+
+async function shutdown() {
+  log("Shutting down...");
+  for (const sid of Object.keys(transports)) {
+    try { await transports[sid].close(); } catch (_) {}
+  }
+  process.exit(0);
+}
