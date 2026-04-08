@@ -5,9 +5,7 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "start:http": "node scripts/start-http.js",
-    "generate-certs": "node scripts/generate-certs.js"
+    "start": "node src/server.js"
   },
   "engines": {
     "node": ">=18.0.0"
